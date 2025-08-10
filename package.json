@@ -10,6 +10,8 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:api": "npm --workspace @avoalert/api run dev",
+    "build:api": "npm --workspace @avoalert/api run build",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",

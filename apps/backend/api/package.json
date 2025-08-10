@@ -1,11 +1,11 @@
 {
-  "name": "@avoalert/alarm-dispatcher",
-  "version": "1.0.0",
-  "description": "Signal processing and notification delivery service",
+  "name": "@avoalert/api",
+  "version": "0.1.0",
   "private": true,
+  "description": "AvoAlert modular monolith API (Express + TypeScript)",
   "scripts": {
     "dev": "tsx watch src/app.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/app.js",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit"
@@ -20,3 +20,4 @@
     "typescript": "^5.0.0"
   }
 }
+
