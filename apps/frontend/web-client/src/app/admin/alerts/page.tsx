@@ -50,6 +50,9 @@ export default function AlertsPanel() {
 
   const buildPineScript = (preset: Preset) => {
     const pj = JSON.stringify(preset.params || {})
+    const sec = webhook?.secret || ""
+    const secretLine = sec ? `sec = \"${sec}\"  // panel secret\n` : `// sec = \"YOUR_SECRET\"  // panelden al ve doldur\n`
+    const secretField = sec ? `,\\\"secret\\\":\\\"" + sec + "\\\"` : ``
     return `//@version=5
 indicator("AvoAlert Multi", overlay=true)
 
@@ -57,30 +60,30 @@ indicator("AvoAlert Multi", overlay=true)
 // PresetId: ${preset.id}
 // Params: ${pj}
 
-// Preset kimliği
+// Preset ve Secret
 presetId = "${preset.name}"
 presetVersion = ${preset.version}
-
-// Basit sinyal örneği: 10 SMA
+${secretLine}
+// Basit sinyal: 10 SMA
 ma = ta.sma(close, 10)
 plot(ma, color=color.new(color.blue, 0), title="MA10")
 
 condBuy  = ta.crossover(close, ma)
 condSell = ta.crossunder(close, ma)
 
-// TradingView alertcondition sabit (const) mesaj ister
+// TradingView alertcondition sabit mesaj ister
 alertcondition(condBuy,  title="UTBOT BUY",  message="UTBOT BUY")
 alertcondition(condSell, title="UTBOT SELL", message="UTBOT SELL")
 
-// Tek alert kuracaksan: Condition = Any alert() function call, Message boş bırak
+// Tek alert: Condition = Any alert() function call, Message boş
 if condBuy
     ts  = str.tostring(time)
-    msg = "{\\\"indicator\\\":\\\"utbot\\\",\\\"action\\\":\\\"buy\\\",\\\"presetId\\\":\\\"" + presetId + "\\\",\\\"presetVersion\\\":" + str.tostring(presetVersion) + ",\\\"ts\\\":\\\"" + ts + "\\\"}"
+    msg = "{\\\"indicator\\\":\\\"utbot\\\",\\\"action\\\":\\\"buy\\\",\\\"presetId\\\":\\\"" + presetId + "\\\",\\\"presetVersion\\\":" + str.tostring(presetVersion) + ",\\\"ts\\\":\\\"" + ts + "\\\"${secretField}}"
     alert(msg, alert.freq_once_per_bar_close)
 
 if condSell
     ts  = str.tostring(time)
-    msg = "{\\\"indicator\\\":\\\"utbot\\\",\\\"action\\\":\\\"sell\\\",\\\"presetId\\\":\\\"" + presetId + "\\\",\\\"presetVersion\\\":" + str.tostring(presetVersion) + ",\\\"ts\\\":\\\"" + ts + "\\\"}"
+    msg = "{\\\"indicator\\\":\\\"utbot\\\",\\\"action\\\":\\\"sell\\\",\\\"presetId\\\":\\\"" + presetId + "\\\",\\\"presetVersion\\\":" + str.tostring(presetVersion) + ",\\\"ts\\\":\\\"" + ts + "\\\"${secretField}}"
     alert(msg, alert.freq_once_per_bar_close)
 `
   }
@@ -89,60 +92,38 @@ if condSell
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Alarm Kurulum Paneli</h1>
-      <div className="rounded-md border bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-        <p className="font-semibold mb-1">Kısa kılavuz</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Presets sekmesinden UT Bot A/B gibi parametre setlerini ve versiyonlarını yönet.</li>
-          <li>Coin × Timeframe atamasını yap; toplam kaç alert gerektiğini aşağıdaki özetten gör.</li>
-          <li>Pine Script (Copy) içeriğini TradingView → Pine Editor’a yapıştır, Save + Add to chart.</li>
-          <li>Alert oluştur: Condition = <b>Any alert() function call</b>, Trigger = <b>Once per bar close</b>, Message boş, Webhook URL aşağıdaki değeri kullan.</li>
-          <li>Her coin × timeframe için 1 alert kurulur. Parametre değiştiğinde yeni versiyonu seçip scripti güncellemen yeterli.</li>
-        </ul>
-        <div className="mt-2 text-xs text-amber-800">
-          Webhook JSON örneği: {`{symbol, timeframe, indicator:"utbot", action:"buy|sell", presetId, presetVersion, ts, secret}`}
-        </div>
-        <div className="mt-3 border-t pt-3">
-          <p className="font-semibold mb-1">Örnek (AVAX, UT Bot 2/18 ve 4h)</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li>
-              Presets → Yeni Preset: name=
-              <code className="mx-1">UTB_A</code>, version=
-              <code className="mx-1">1</code>, params=
-              <code className="mx-1">{"{ \"key\": 2, \"atr\": 18 }"}</code>
-              → Kaydet.
-            </li>
-            <li>
-              Timeframe Setleri → Yeni Set: name=
-              <code className="mx-1">H4</code>, timeframes=
-              <code className="mx-1">["4h"]</code>
-              → Kaydet.
-            </li>
-            <li>
-              Coin Grupları → Yeni Grup: name=
-              <code className="mx-1">Single AVAX</code>, symbols=
-              <code className="mx-1">["AVAXUSDT"]</code>
-              → Kaydet.
-            </li>
-            <li>
-              Bulk Assignment → group=
-              <code className="mx-1">Single AVAX</code>, tf set=
-              <code className="mx-1">H4</code>, preset=
-              <code className="mx-1">UTB_A v1</code>
-              → Uygula.
-            </li>
-            <li>Pine Script (Copy) → TV’de AVAX/USDT grafiği + 4h → Pine Editor’a yapıştır, Save + Add to chart.</li>
-            <li>Alert: Any alert() + Webhook URL (Message boş) → Create.</li>
-          </ol>
-        </div>
-        <div className="mt-3 border-t pt-3">
-          <p className="font-semibold mb-1">Neden Coin/TF Grupları?</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Çoklu atama için hız kazandırır: 25 coin’i tek seferde aynı preset@version ve TF set ile eşleyebilirsin.</li>
-            <li>Tek coin/timeframe senaryosunda da kullanılabilir: 1 sembollü grup + 1 öğeli TF set oluşturmak yeterli.</li>
-            <li>2 ayda bir parametre değiştiğinde, aynı grupları kullanıp hızla yeni assignment üretebilirsin.</li>
+      <h1 className="text-2xl font-bold mb-2">Alarm Kurulum Paneli</h1>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+        <details className="col-span-1 md:col-span-1 rounded-md border bg-amber-50 p-4 open:shadow">
+          <summary className="font-semibold cursor-pointer">Kısa kılavuz</summary>
+          <ul className="mt-2 list-disc pl-5 space-y-1 text-amber-900">
+            <li>Presets’i yönet, coin×timeframe atamasını yap.</li>
+            <li>Pine Script’i kopyala → TV Pine Editor → Save + Add to chart.</li>
+            <li>Alert: Condition = Any alert() function call, Trigger = Once per bar close, Message boş.</li>
+            <li>Her coin×timeframe için 1 alert yeterlidir.</li>
           </ul>
-        </div>
+          <div className="mt-2 text-xs text-amber-800">
+            Webhook JSON: {`{symbol,timeframe,indicator,action,presetId,presetVersion,ts,secret}`}
+          </div>
+        </details>
+        <details className="col-span-1 rounded-md border p-4 open:shadow">
+          <summary className="font-semibold cursor-pointer">Örnek (AVAX, UT Bot 2/18, 4h)</summary>
+          <ol className="mt-2 list-decimal pl-5 space-y-1">
+            <li>Preset: UTB_A v1, params {`{"key":2,"atr":18}`}</li>
+            <li>TF Set: H4 → ["4h"]</li>
+            <li>Coin Group: Single AVAX → ["AVAXUSDT"]</li>
+            <li>Bulk assignment ile bağla.</li>
+            <li>Pine Script kopyala ve TV’ye ekle; alert’i yarat.</li>
+          </ol>
+        </details>
+        <details className="col-span-1 rounded-md border p-4 open:shadow">
+          <summary className="font-semibold cursor-pointer">Neden Coin/TF Grupları?</summary>
+          <ul className="mt-2 list-disc pl-5 space-y-1">
+            <li>Çoklu atamayı tek işlemde yaparsın.</li>
+            <li>Tek sembolde bile akışı standartlaştırır.</li>
+            <li>Parametre güncellemesinde tekrar kullanılır.</li>
+          </ul>
+        </details>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="border rounded p-4 space-y-3">
@@ -180,9 +161,19 @@ if condSell
 
         <div className="border rounded p-4 space-y-3">
           <h2 className="font-semibold">Webhook</h2>
-          <div className="text-sm">URL: <code>{webhook?.url || '-'}</code></div>
-          <div className="text-sm">Secret: <code>{webhook?.secret || '-'}</code></div>
-          <p className="text-xs text-gray-600">TradingView alert’te Condition: Any alert() ve Message boş bırakılabilir.</p>
+          <div className="flex items-center gap-2 text-sm">
+            <span>URL:</span>
+            <code className="truncate">{webhook?.url || '-'}</code>
+            <button className="px-2 py-1 border rounded"
+              onClick={async()=>{ if(webhook?.url){ try{ await navigator.clipboard.writeText(webhook.url); alert('URL kopyalandı') }catch{ alert('Kopyalanamadı') } }}}>Kopyala</button>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span>Secret:</span>
+            <code className="truncate">{webhook?.secret || '-'}</code>
+            <button className="px-2 py-1 border rounded"
+              onClick={async()=>{ if(webhook?.secret){ try{ await navigator.clipboard.writeText(webhook.secret); alert('Secret kopyalandı') }catch{ alert('Kopyalanamadı') } }}}>Kopyala</button>
+          </div>
+          <p className="text-xs text-gray-600">Alert’te Condition: Any alert(), Message boş. Secret, üretilen Pine Script’e otomatik eklenir.</p>
         </div>
       </div>
 
@@ -265,6 +256,7 @@ if condSell
             if(!generatedScript){ alert('Preset seçip "Pine Script Üret"e tıkla'); return }
             try{ await navigator.clipboard.writeText(generatedScript); alert('Script kopyalandı') } catch{ alert('Kopyalanamadı') }
           }}>Kopyala</button>
+          <button className="px-3 py-2 border rounded" onClick={()=> setGeneratedScript('') }>Temizle</button>
           {tasklist[0] && (
             <a className="px-3 py-2 border rounded" target="_blank" rel="noreferrer"
                href={`https://www.tradingview.com/chart/?symbol=BINANCE%3A${encodeURIComponent(tasklist[0].symbol)}`}>
@@ -277,8 +269,19 @@ if condSell
 
       <div className="border rounded p-4 space-y-3">
         <h2 className="font-semibold">Assignment Özeti</h2>
-        <div className="text-xs">Toplam aktif alert: {tasklist.length} (coin×timeframe)</div>
-        <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-72">{JSON.stringify(tasklist, null, 2)}</pre>
+        <div className="text-xs">Toplam aktif alert: {tasklist.length}</div>
+        <div className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-72">
+          <ul className="space-y-1">
+            {tasklist.slice(0, 20).map((t,i)=> (
+              <li key={i} className="flex justify-between gap-3">
+                <span className="font-mono">{t.symbol}</span>
+                <span className="font-mono text-gray-600">{t.timeframe}</span>
+                <span className="text-gray-500">{t.presetId}@v{t.presetVersion}</span>
+              </li>
+            ))}
+          </ul>
+          {tasklist.length > 20 && <div className="mt-2 text-gray-500">+{tasklist.length-20} daha…</div>}
+        </div>
         <p className="text-xs text-gray-600">Adımlar: Grafiği aç → timeframe seç → Pine’ı yapıştır/sakla → Alert: Any alert() + Webhook URL → Create.</p>
       </div>
     </div>
