@@ -145,4 +145,167 @@ adminRouter.post('/reset-all', async (req, res) => {
   res.json({ ok: true })
 })
 
+// ---------- Presets CRUD ----------
+// item: { id, name, indicator: 'utbot', version: number, params: object, active: boolean }
+adminRouter.get('/presets', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('presets').select('*').order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/presets', async (req, res) => {
+  const { name, indicator = 'utbot', version = 1, params = {}, active = true } = req.body || {}
+  if (!name) return res.status(400).json({ ok: false, error: 'name required' })
+  const id = randomUUID()
+  const { error } = await supabaseAdmin.from('presets').insert({ id, name, indicator, version, params, active })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/presets/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('presets').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/presets/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('presets').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+// ---------- Coin Groups CRUD ----------
+// item: { id, name, symbols: string[] }
+adminRouter.get('/groups', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('coin_groups').select('*').order('name', { ascending: true })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/groups', async (req, res) => {
+  const { name, symbols } = req.body || {}
+  if (!name || !Array.isArray(symbols)) return res.status(400).json({ ok: false, error: 'name_and_symbols_required' })
+  const id = randomUUID()
+  const { error } = await supabaseAdmin.from('coin_groups').insert({ id, name, symbols })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/groups/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('coin_groups').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/groups/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('coin_groups').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+// ---------- Timeframe Sets CRUD ----------
+// item: { id, name, timeframes: string[] }
+adminRouter.get('/timeframes', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('timeframe_sets').select('*').order('name', { ascending: true })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/timeframes', async (req, res) => {
+  const { name, timeframes } = req.body || {}
+  if (!name || !Array.isArray(timeframes)) return res.status(400).json({ ok: false, error: 'name_and_timeframes_required' })
+  const id = randomUUID()
+  const { error } = await supabaseAdmin.from('timeframe_sets').insert({ id, name, timeframes })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/timeframes/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('timeframe_sets').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/timeframes/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('timeframe_sets').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+// ---------- Assignments CRUD ----------
+// item: { id, symbol, timeframe, preset_id, preset_version, status }
+adminRouter.get('/assignments', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('assignments').select('*').order('updated_at', { ascending: false })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/assignments', async (req, res) => {
+  const { symbol, timeframe, preset_id, preset_version, status = 'active' } = req.body || {}
+  if (!symbol || !timeframe || !preset_id || typeof preset_version !== 'number') {
+    return res.status(400).json({ ok: false, error: 'symbol_timeframe_preset_required' })
+  }
+  const id = randomUUID()
+  const { error } = await supabaseAdmin.from('assignments').insert({ id, symbol, timeframe, preset_id, preset_version, status })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/assignments/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('assignments').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/assignments/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('assignments').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+// ---------- Bulk assignment (group × timeframe set) ----------
+adminRouter.post('/assignments/bulk', async (req, res) => {
+  const { group_id, timeframe_set_id, preset_id, preset_version, status = 'active' } = req.body || {}
+  if (!group_id || !timeframe_set_id || !preset_id || typeof preset_version !== 'number') {
+    return res.status(400).json({ ok: false, error: 'group_timeframeSet_preset_required' })
+  }
+  const { data: g, error: ge } = await supabaseAdmin.from('coin_groups').select('symbols').eq('id', group_id).single()
+  if (ge) return res.status(500).json({ ok: false, error: ge.message })
+  const { data: t, error: te } = await supabaseAdmin.from('timeframe_sets').select('timeframes').eq('id', timeframe_set_id).single()
+  if (te) return res.status(500).json({ ok: false, error: te.message })
+  const symbols: string[] = g?.symbols || []
+  const timeframes: string[] = t?.timeframes || []
+  const rows = symbols.flatMap((symbol) => timeframes.map((timeframe) => ({ id: randomUUID(), symbol, timeframe, preset_id, preset_version, status })))
+  if (rows.length === 0) return res.json({ ok: true, inserted: 0 })
+  const { error } = await supabaseAdmin.from('assignments').insert(rows)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, inserted: rows.length })
+})
+
+// ---------- Export tasklist ----------
+adminRouter.get('/export-tasklist', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('assignments').select('symbol,timeframe,preset_id,preset_version,status')
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  const tasklist = (data || [])
+    .filter((a: any) => a.status !== 'paused')
+    .map((a: any) => ({ symbol: a.symbol, timeframe: a.timeframe, presetId: a.preset_id, presetVersion: a.preset_version }))
+  res.json({ ok: true, tasklist })
+})
+
+// ---------- Webhook info ----------
+adminRouter.get('/webhook', async (_req, res) => {
+  const urlBase = process.env.WEBHOOK_BASE_URL || ''
+  const url = urlBase ? `${urlBase}/signals/tradingview` : '/signals/tradingview'
+  res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
+})
+
+
 

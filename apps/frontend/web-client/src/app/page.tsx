@@ -36,14 +36,10 @@ export default function Home() {
           </div>
           <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <a href="/dashboard">
-                Get Started
-              </a>
+              <a href="/admin/alerts">Alarm Kurulum Paneli</a>
             </Button>
             <Button asChild variant="outline" size="lg" className="w-full sm:w-auto mt-3 sm:mt-0 sm:ml-3">
-              <a href="/admin">
-                Admin Panel
-              </a>
+              <a href="/admin/test-panel">Test Paneli</a>
             </Button>
           </div>
         </div>

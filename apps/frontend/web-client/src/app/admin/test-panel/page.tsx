@@ -83,8 +83,15 @@ export default function AdminTestPanel() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="rounded-md border bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+        <p className="font-semibold mb-1">Bu sayfa ne için?</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li>TradingView olmadan uçtan uca akışı test etmek.</li>
+          <li>Seed Users ile Supabase’te dummy kullanıcılar oluştur; Simulate ile sinyal üret.</li>
+          <li>Bildirimler ve Processed listelerinden sonucu gözlemle.</li>
+        </ul>
+      </div>
       <h1 className="text-2xl font-bold">Admin Test Panel</h1>
-      <p className="text-sm text-gray-600">TradingView olmadan uçtan uca test edebilirsiniz. Önce dummy kullanıcıları seed edin, sonra bir sinyal simüle edin. Worker bu sinyali tüm dummy kullanıcılara teslim eder ve aşağıdaki listeler güncellenir.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="border rounded p-4 space-y-3">
