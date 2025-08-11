@@ -1,5 +1,8 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000'
 
@@ -92,61 +95,84 @@ if condSell
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold mb-2">Alarm Kurulum Paneli</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-        <details className="col-span-1 md:col-span-1 rounded-md border bg-amber-50 p-4 open:shadow">
-          <summary className="font-semibold cursor-pointer">Kısa kılavuz</summary>
-          <ul className="mt-2 list-disc pl-5 space-y-1 text-amber-900">
-            <li>Presets’i yönet, coin×timeframe atamasını yap.</li>
-            <li>Pine Script’i kopyala → TV Pine Editor → Save + Add to chart.</li>
-            <li>Alert: Condition = Any alert() function call, Trigger = Once per bar close, Message boş.</li>
-            <li>Her coin×timeframe için 1 alert yeterlidir.</li>
-          </ul>
-          <div className="mt-2 text-xs text-amber-800">
-            Webhook JSON: {`{symbol,timeframe,indicator,action,presetId,presetVersion,ts,secret}`}
-          </div>
-        </details>
-        <details className="col-span-1 rounded-md border p-4 open:shadow">
-          <summary className="font-semibold cursor-pointer">Örnek (AVAX, UT Bot 2/18, 4h)</summary>
-          <ol className="mt-2 list-decimal pl-5 space-y-1">
-            <li>Preset: UTB_A v1, params {`{"key":2,"atr":18}`}</li>
-            <li>TF Set: H4 → ["4h"]</li>
-            <li>Coin Group: Single AVAX → ["AVAXUSDT"]</li>
-            <li>Bulk assignment ile bağla.</li>
-            <li>Pine Script kopyala ve TV’ye ekle; alert’i yarat.</li>
-          </ol>
-        </details>
-        <details className="col-span-1 rounded-md border p-4 open:shadow">
-          <summary className="font-semibold cursor-pointer">Neden Coin/TF Grupları?</summary>
-          <ul className="mt-2 list-disc pl-5 space-y-1">
-            <li>Çoklu atamayı tek işlemde yaparsın.</li>
-            <li>Tek sembolde bile akışı standartlaştırır.</li>
-            <li>Parametre güncellemesinde tekrar kullanılır.</li>
-          </ul>
-        </details>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Alarm Kurulum Paneli</h1>
+        <Badge variant="outline" className="px-3 py-1">Aktif alert: {tasklist.length}</Badge>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+        <Card>
+          <CardHeader>
+            <CardTitle>Kısa kılavuz</CardTitle>
+            <CardDescription>Hızlı başlangıç adımları</CardDescription>
+          </CardHeader>
+          <CardContent className="text-amber-900">
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Presets’i yönet, coin×timeframe atamasını yap.</li>
+              <li>Pine Script’i kopyala → TV Pine Editor → Save + Add to chart.</li>
+              <li>Alert: Condition = Any alert() function call, Trigger = Once per bar close, Message boş.</li>
+              <li>Her coin×timeframe için 1 alert yeterlidir.</li>
+            </ul>
+            <div className="mt-2 text-xs text-amber-800">
+              Webhook JSON: {`{symbol,timeframe,indicator,action,presetId,presetVersion,ts,secret}`}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Örnek</CardTitle>
+            <CardDescription>AVAX, UT Bot 2/18, 4h</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ol className="list-decimal pl-5 space-y-1">
+              <li>Preset: UTB_A v1, params {`{"key":2,"atr":18}`}</li>
+              <li>TF Set: H4 → ["4h"]</li>
+              <li>Coin Group: Single AVAX → ["AVAXUSDT"]</li>
+              <li>Bulk assignment ile bağla.</li>
+              <li>Pine Script kopyala ve TV’ye ekle; alert’i yarat.</li>
+            </ol>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Neden Coin/TF Grupları?</CardTitle>
+            <CardDescription>Organizasyon ve hız</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Çoklu atamayı tek işlemde yaparsın.</li>
+              <li>Tek sembolde bile akışı standartlaştırır.</li>
+              <li>Parametre güncellemesinde tekrar kullanılır.</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border rounded p-4 space-y-3">
-          <h2 className="font-semibold">Presets</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Presets</CardTitle>
+            <CardDescription>Parametre setleri ve versiyonlar</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
           <select className="border rounded px-2 py-1" value={selectedPresetId} onChange={e => setSelectedPresetId(e.target.value)}>
             {presets.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
           </select>
           <div>
-            <button className="mt-2 px-3 py-2 border rounded text-sm" disabled={!selectedPreset}
+            <Button variant="outline" size="sm" className="mt-2" disabled={!selectedPreset}
               onClick={()=>{
                 if(!selectedPreset){ alert('Önce bir preset seç'); return }
                 const s = buildPineScript(selectedPreset)
                 setGeneratedScript(s)
-              }}>Pine Script Üret</button>
+              }}>Pine Script Üret</Button>
           </div>
-          <div className="text-xs text-gray-600">Toplam presets: {presets.length}</div>
+          <div className="text-xs text-gray-600">Toplam presets: <Badge variant="secondary">{presets.length}</Badge></div>
           <div className="mt-3 border-t pt-3">
             <h3 className="font-medium text-sm mb-2">Yeni Preset Oluştur</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <input className="border rounded px-2 py-1" placeholder="Name (örn. UTB_A)" value={newPreset.name} onChange={e=>setNewPreset({...newPreset,name:e.target.value})} />
               <input className="border rounded px-2 py-1" type="number" placeholder="Version" value={newPreset.version} onChange={e=>setNewPreset({...newPreset,version: Number(e.target.value)||1})} />
               <textarea className="col-span-2 border rounded px-2 py-1 h-20" placeholder='Params JSON ({"key":2,"atr":18})' value={newPreset.paramsText} onChange={e=>setNewPreset({...newPreset,paramsText:e.target.value})} />
-              <button className="col-span-2 px-3 py-2 bg-black text-white rounded" disabled={loading}
+              <Button className="col-span-2" disabled={loading}
                 onClick={async ()=>{
                   try{
                     setLoading(true)
@@ -154,37 +180,47 @@ if condSell
                     await fetch(`${API_BASE}/admin/presets`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:newPreset.name,indicator:'utbot',version:newPreset.version,params,active:newPreset.active})})
                     await loadAll()
                   }catch(err){ alert('Preset kaydedilemedi: '+(err as any)?.message) } finally{ setLoading(false) }
-                }}>Kaydet</button>
+                }}>Kaydet</Button>
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="border rounded p-4 space-y-3">
-          <h2 className="font-semibold">Webhook</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Webhook</CardTitle>
+            <CardDescription>URL ve secret</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <span>URL:</span>
             <code className="truncate">{webhook?.url || '-'}</code>
-            <button className="px-2 py-1 border rounded"
-              onClick={async()=>{ if(webhook?.url){ try{ await navigator.clipboard.writeText(webhook.url); alert('URL kopyalandı') }catch{ alert('Kopyalanamadı') } }}}>Kopyala</button>
+            <Button variant="outline" size="sm"
+              onClick={async()=>{ if(webhook?.url){ try{ await navigator.clipboard.writeText(webhook.url); alert('URL kopyalandı') }catch{ alert('Kopyalanamadı') } }}}>Kopyala</Button>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span>Secret:</span>
             <code className="truncate">{webhook?.secret || '-'}</code>
-            <button className="px-2 py-1 border rounded"
-              onClick={async()=>{ if(webhook?.secret){ try{ await navigator.clipboard.writeText(webhook.secret); alert('Secret kopyalandı') }catch{ alert('Kopyalanamadı') } }}}>Kopyala</button>
+            <Button variant="outline" size="sm"
+              onClick={async()=>{ if(webhook?.secret){ try{ await navigator.clipboard.writeText(webhook.secret); alert('Secret kopyalandı') }catch{ alert('Kopyalanamadı') } }}}>Kopyala</Button>
           </div>
           <p className="text-xs text-gray-600">Alert’te Condition: Any alert(), Message boş. Secret, üretilen Pine Script’e otomatik eklenir.</p>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border rounded p-4 space-y-3">
-          <h2 className="font-semibold">Coin Grupları</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Coin Grupları</CardTitle>
+            <CardDescription>Birlikte yönetmek için sembol kümeleri</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
           <div className="text-xs text-gray-600">Toplam grup: {groups.length}</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <input className="border rounded px-2 py-1" placeholder="Group Name" value={newGroup.name} onChange={e=>setNewGroup({...newGroup,name:e.target.value})} />
             <input className="border rounded px-2 py-1" placeholder="Symbols (CSV)" value={newGroup.symbolsText} onChange={e=>setNewGroup({...newGroup,symbolsText:e.target.value})} />
-            <button className="col-span-2 px-3 py-2 bg-black text-white rounded" disabled={loading}
+            <Button className="col-span-2" disabled={loading}
               onClick={async ()=>{
                 try{
                   setLoading(true)
@@ -192,17 +228,22 @@ if condSell
                   await fetch(`${API_BASE}/admin/groups`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:newGroup.name,symbols})})
                   await loadAll()
                 }catch(err){ alert('Grup kaydedilemedi') } finally{ setLoading(false) }
-              }}>Grup Kaydet</button>
+              }}>Grup Kaydet</Button>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="border rounded p-4 space-y-3">
-          <h2 className="font-semibold">Timeframe Setleri</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Timeframe Setleri</CardTitle>
+            <CardDescription>Önceden tanımlı TF listeleri</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
           <div className="text-xs text-gray-600">Toplam set: {tfs.length}</div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <input className="border rounded px-2 py-1" placeholder="Set Name" value={newTF.name} onChange={e=>setNewTF({...newTF,name:e.target.value})} />
             <input className="border rounded px-2 py-1" placeholder="TFs (CSV) örn: 15m,1h,4h" value={newTF.timeframesText} onChange={e=>setNewTF({...newTF,timeframesText:e.target.value})} />
-            <button className="col-span-2 px-3 py-2 bg-black text-white rounded" disabled={loading}
+            <Button className="col-span-2" disabled={loading}
               onClick={async ()=>{
                 try{
                   setLoading(true)
@@ -210,13 +251,18 @@ if condSell
                   await fetch(`${API_BASE}/admin/timeframes`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:newTF.name,timeframes})})
                   await loadAll()
                 }catch(err){ alert('Timeframe set kaydedilemedi') } finally{ setLoading(false) }
-              }}>Set Kaydet</button>
+              }}>Set Kaydet</Button>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="border rounded p-4 space-y-3">
-        <h2 className="font-semibold">Bulk Assignment</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle>Bulk Assignment</CardTitle>
+          <CardDescription>Grup × TF set × preset’i hızlı bağla</CardDescription>
+        </CardHeader>
+        <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
           <select className="border rounded px-2 py-1" value={bulk.groupId} onChange={e=>setBulk({...bulk,groupId:e.target.value})}>
             <option value="">Grup seç</option>
@@ -231,7 +277,7 @@ if condSell
             {presets.map(p=> <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input className="border rounded px-2 py-1" type="number" placeholder="Version" value={bulk.presetVersion} onChange={e=>setBulk({...bulk,presetVersion:Number(e.target.value)||1})} />
-          <button className="px-3 py-2 bg-indigo-600 text-white rounded" disabled={loading}
+          <Button className="px-3 py-2" disabled={loading}
             onClick={async ()=>{
               if(!bulk.groupId || !bulk.tfSetId || !(bulk.presetId||selectedPresetId)) { alert('Alanları seçiniz'); return }
               try{
@@ -245,32 +291,43 @@ if condSell
                 })})
                 await loadAll()
               }catch(err){ alert('Bulk assignment başarısız') } finally{ setLoading(false) }
-            }}>Uygula</button>
+            }}>Uygula</Button>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="border rounded p-4 space-y-3">
-        <h2 className="font-semibold">Pine Script (Copy)</h2>
+      <Card>
+        <CardHeader>
+          <CardTitle>Pine Script (Copy)</CardTitle>
+          <CardDescription>TradingView Pine Editor’a yapıştır</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
         <div className="flex gap-2 text-sm">
-          <button className="px-3 py-2 border rounded" onClick={async()=>{
-            if(!generatedScript){ alert('Preset seçip "Pine Script Üret"e tıkla'); return }
+          <Button variant="outline" onClick={async()=>{
+            if(!generatedScript){ alert('Preset seçip \"Pine Script Üret\"e tıkla'); return }
             try{ await navigator.clipboard.writeText(generatedScript); alert('Script kopyalandı') } catch{ alert('Kopyalanamadı') }
-          }}>Kopyala</button>
-          <button className="px-3 py-2 border rounded" onClick={()=> setGeneratedScript('') }>Temizle</button>
+          }}>Kopyala</Button>
+          <Button variant="outline" onClick={()=> setGeneratedScript('') }>Temizle</Button>
           {tasklist[0] && (
-            <a className="px-3 py-2 border rounded" target="_blank" rel="noreferrer"
-               href={`https://www.tradingview.com/chart/?symbol=BINANCE%3A${encodeURIComponent(tasklist[0].symbol)}`}>
-              TradingView grafiğini aç
-            </a>
+            <Button asChild variant="outline">
+              <a target="_blank" rel="noreferrer" href={`https://www.tradingview.com/chart/?symbol=BINANCE%3A${encodeURIComponent(tasklist[0].symbol)}`}>
+                TradingView grafiğini aç
+              </a>
+            </Button>
           )}
         </div>
         <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-72">{generatedScript || '// Preset seç ve "Pine Script Üret" butonuna tıkla'}</pre>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="border rounded p-4 space-y-3">
-        <h2 className="font-semibold">Assignment Özeti</h2>
-        <div className="text-xs">Toplam aktif alert: {tasklist.length}</div>
-        <div className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-72">
+      <Card>
+        <CardHeader>
+          <CardTitle>Assignment Özeti</CardTitle>
+          <CardDescription>Aktif alertler</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="text-xs">Toplam aktif alert: {tasklist.length}</div>
+          <div className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-72">
           <ul className="space-y-1">
             {tasklist.slice(0, 20).map((t,i)=> (
               <li key={i} className="flex justify-between gap-3">
@@ -281,9 +338,10 @@ if condSell
             ))}
           </ul>
           {tasklist.length > 20 && <div className="mt-2 text-gray-500">+{tasklist.length-20} daha…</div>}
-        </div>
-        <p className="text-xs text-gray-600">Adımlar: Grafiği aç → timeframe seç → Pine’ı yapıştır/sakla → Alert: Any alert() + Webhook URL → Create.</p>
-      </div>
+          </div>
+          <p className="text-xs text-gray-600">Adımlar: Grafiği aç → timeframe seç → Pine’ı yapıştır/sakla → Alert: Any alert() + Webhook URL → Create.</p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
