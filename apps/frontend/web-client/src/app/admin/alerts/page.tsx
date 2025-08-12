@@ -38,14 +38,15 @@ export default function AlertsPanel() {
     { groupId: '', tfSetId: '', presetId: '', presetVersion: 1 }
   )
   const [generatedScript, setGeneratedScript] = useState<string>('')
-  const [newIndicator, setNewIndicator] = useState<{name:string; key:string; template:string; params:{k:string; v:string}[]}>(
+  type ParamType = 'number' | 'boolean'
+  const [newIndicator, setNewIndicator] = useState<{name:string; key:string; template:string; params:{k:string; t:ParamType; v:string}[]}>(
     { name: '', key: '', template: '', params: [] }
   )
   const [indicatorEditModeNew, setIndicatorEditModeNew] = useState<boolean>(false)
   const [presetEditModeNew, setPresetEditModeNew] = useState<boolean>(false)
   const [newPresetIndicatorId, setNewPresetIndicatorId] = useState<string>('')
   // Preset params as flexible key/value rows, driven by selected indicator defaults
-  const [presetParamRows, setPresetParamRows] = useState<{k:string; v:string}[]>([])
+  const [presetParamRows, setPresetParamRows] = useState<{k:string; t:ParamType; v:string}[]>([])
 
   const loadAll = async () => {
     const [p, g, t, a, w, i, c, tfm] = await Promise.all([
@@ -305,7 +306,7 @@ if sell
                 const p = presets.find(pp => pp.id === id)
                 if (p) {
                   setNewPreset({ name: p.name, version: p.version, paramsText: JSON.stringify(p.params || {}), active: p.active })
-                  const rows = Object.entries(p.params || {}).map(([k,v])=> ({ k, v: String(v) }))
+                  const rows = Object.entries(p.params || {}).map(([k,v])=> ({ k, t: (typeof v === 'boolean' ? 'boolean' : (typeof v === 'number' ? 'number' : 'string')) as ParamType, v: String(v) }))
                   setPresetParamRows(rows)
                   const iid = indicators.find(d => d.key === p.indicator)?.id || ''
                   setNewPresetIndicatorId(iid)
@@ -334,7 +335,7 @@ if sell
                     setNewPresetIndicatorId(id)
                     const ind = indicators.find(d=> d.id === id)
                     // load indicator default params into preset rows
-                    const rows = Object.entries(ind?.default_params || {}).map(([k,v])=> ({ k, v: String(v) }))
+                    const rows = Object.entries(ind?.default_params || {}).map(([k,v])=> ({ k, t: (typeof v === 'boolean' ? 'boolean' : 'number') as ParamType, v: String(v) }))
                     setPresetParamRows(rows)
                   }}>
                     <option value="">Lütfen Seçin</option>
@@ -347,13 +348,24 @@ if sell
               <div className="col-span-2">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-600">Params (indicator’a göre)</span>
-                  <Button variant="outline" size="sm" onClick={()=> setPresetParamRows([...presetParamRows, {k:'', v:''}])} disabled={!canEditPreset || !newPresetIndicatorId}>+</Button>
+                  <Button variant="outline" size="sm" onClick={()=> setPresetParamRows([...presetParamRows, {k:'', t:'number', v:''}])} disabled={!canEditPreset || !newPresetIndicatorId}>+</Button>
                 </div>
                 <div className="space-y-2">
                   {presetParamRows.map((p,idx)=> (
                     <div key={idx} className="grid grid-cols-5 gap-2">
-                      <input className="border rounded px-2 py-1 col-span-2" placeholder="name" value={p.k} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],k:e.target.value}; setPresetParamRows(arr) }} disabled={!canEditPreset} />
-                      <input className="border rounded px-2 py-1 col-span-2" placeholder="value" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }} disabled={!canEditPreset} />
+                      <input className="border rounded px-2 py-1" placeholder="name" value={p.k} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],k:e.target.value}; setPresetParamRows(arr) }} disabled={!canEditPreset} />
+                      <select className="border rounded px-2 py-1 bg-gray-100 text-gray-600" value={p.t} onChange={()=>{}} disabled title="Parametre tipi indikatörden gelir. Değiştirmek için Indicators kartını kullanın.">
+                        <option value="number">number</option>
+                        <option value="boolean">boolean</option>
+                      </select>
+                      {p.t === 'boolean' ? (
+                        <select className="border rounded px-2 py-1" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }} disabled={!canEditPreset}>
+                          <option value="true">true</option>
+                          <option value="false">false</option>
+                        </select>
+                      ) : (
+                        <input className="border rounded px-2 py-1" placeholder="value" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }} disabled={!canEditPreset} />
+                      )}
                       <Button variant="outline" size="sm" onClick={()=>{ const arr=presetParamRows.filter((_,i)=>i!==idx); setPresetParamRows(arr) }} disabled={!canEditPreset}>Sil</Button>
                     </div>
                   ))}
@@ -363,8 +375,7 @@ if sell
                 onClick={async ()=>{
                   try{
                     setLoading(true)
-                    const params = presetParamRows.reduce((acc:any, cur)=>{ if(cur.k) acc[cur.k]= tryParseNumber(cur.v); return acc }, {} as any)
-                    function tryParseNumber(v:string){ if(v==='true'||v==='false'){ return v==='true' } const n=Number(v); return isNaN(n)? v : n }
+                    const params = presetParamRows.reduce((acc:any, cur)=>{ if(!cur.k) return acc; acc[cur.k] = cur.t==='boolean' ? (cur.v==='true') : (cur.t==='number' ? Number(cur.v) : cur.v); return acc }, {} as any)
                     let resp: Response
                     const indKey = (newPresetIndicatorId ? (indicators.find(d=> d.id === newPresetIndicatorId)?.key || '') : (presetEdit?.indicator || '')) || 'utbot'
                     if (!newPreset.name.trim()) { alert('İsim gerekli'); setLoading(false); return }
@@ -404,8 +415,8 @@ if sell
                   setIndicatorEditModeNew(false)
                   const ind = indicators.find(x=> x.id === id)
                   if (ind){
-                    const paramsArr = Object.entries(ind.default_params || {}).map(([k,v])=> ({ k, v: String(v) }))
-                    setNewIndicator({ name: ind.name, key: ind.key, template: ind.pine_template || '', params: paramsArr.length? paramsArr : [{k:'',v:''}] })
+                    const paramsArr = Object.entries(ind.default_params || {}).map(([k,v])=> ({ k, t: (typeof v === 'boolean' ? 'boolean' : 'number') as ParamType, v: String(v) }))
+                    setNewIndicator({ name: ind.name, key: ind.key, template: ind.pine_template || '', params: paramsArr })
                   }
                 }}>
                   <option value="">Lütfen Seçin</option>
@@ -414,7 +425,7 @@ if sell
               </div>
               <div className="col-span-1 flex items-end justify-between text-xs text-gray-600">
                 <Badge variant="secondary">{indicators.length}</Badge>
-                <Button variant="outline" size="sm" onClick={()=>{ setIndicatorEditModeNew(true); setNewIndicator({ name:'', key:'', template:'', params:[{k:'',v:''}] }) }}>Yeni</Button>
+                <Button variant="outline" size="sm" onClick={()=>{ setIndicatorEditModeNew(true); setNewIndicator({ name:'', key:'', template:'', params:[{k:'',t:'number',v:''}] }) }}>Yeni</Button>
               </div>
             </div>
             <div className="mt-3 border-t pt-3 grid grid-cols-2 gap-2 text-sm">
@@ -425,13 +436,24 @@ if sell
               <div className="col-span-2">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-600">Default Params (opsiyonel)</span>
-                  <Button variant="outline" size="sm" onClick={()=> setNewIndicator({...newIndicator, params:[...newIndicator.params, {k:'',v:''}]})} disabled={!canEditIndicator || !indicatorEditModeNew && !selectedIndicatorId}>+</Button>
+                  <Button variant="outline" size="sm" onClick={()=> setNewIndicator({...newIndicator, params:[...newIndicator.params, {k:'',t:'number',v:''}]})} disabled={!canEditIndicator || !indicatorEditModeNew && !selectedIndicatorId}>+</Button>
                 </div>
                 <div className="space-y-2">
                   {newIndicator.params.map((p,idx)=> (
                     <div key={idx} className="grid grid-cols-5 gap-2">
-                      <input className="border rounded px-2 py-1 col-span-2" placeholder="name" value={p.k} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],k:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
-                      <input className="border rounded px-2 py-1 col-span-2" placeholder="value" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
+                      <input className="border rounded px-2 py-1" placeholder="name" value={p.k} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],k:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
+                      <select className="border rounded px-2 py-1" value={p.t} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],t:e.target.value as ParamType}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>
+                        <option value="number">number</option>
+                        <option value="boolean">boolean</option>
+                      </select>
+                      {p.t==='boolean' ? (
+                        <select className="border rounded px-2 py-1" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>
+                          <option value="true">true</option>
+                          <option value="false">false</option>
+                        </select>
+                      ) : (
+                        <input className="border rounded px-2 py-1" placeholder="value" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
+                      )}
                       <Button variant="outline" size="sm" onClick={()=>{ const arr=newIndicator.params.filter((_,i)=>i!==idx); setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>Sil</Button>
                     </div>
                   ))}
@@ -440,8 +462,7 @@ if sell
               <Button className="col-span-2" disabled={loading || !canEditIndicator}
                 onClick={async ()=>{
                   if(!newIndicator.name || !newIndicator.key){ alert('Name ve Key gerekli'); return }
-                  const default_params = newIndicator.params.reduce((acc:any, cur)=>{ if(cur.k) acc[cur.k]= tryParseNumber(cur.v); return acc }, {} as any)
-                  function tryParseNumber(v:string){ if(v==='true'||v==='false'){ return v==='true' } const n=Number(v); return isNaN(n)? v : n }
+                  const default_params = newIndicator.params.reduce((acc:any, cur)=>{ if(!cur.k) return acc; acc[cur.k] = cur.t==='boolean' ? (cur.v==='true') : (cur.t==='number' ? Number(cur.v) : cur.v); return acc }, {} as any)
                   try{
                     setLoading(true)
                     if (indicatorEditModeNew || !selectedIndicatorId){
