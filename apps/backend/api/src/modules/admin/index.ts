@@ -16,22 +16,6 @@ function safeParse<T = any>(value: unknown): T | null {
   }
 }
 
-// Seed dummy users (for demo)
-adminRouter.post('/seed-users', async (req, res) => {
-  const num = Number(req.query.count || 5)
-  const users = Array.from({ length: num }).map(() => ({
-    id: randomUUID(),
-    email: `${Math.random().toString(36).slice(2, 8)}@demo.local`,
-    channels: ['email'],
-    createdAt: new Date().toISOString(),
-  }))
-  await redis.del('admin:users')
-  if (users.length) {
-    await redis.lpush('admin:users', ...users.map((u) => JSON.stringify(u)))
-  }
-  res.json({ ok: true, count: users.length })
-})
-
 // Supabase Auth: Seed dummy users via admin API (email_confirmed:true)
 adminRouter.post('/seed-users-supabase', async (req, res) => {
   try {
@@ -154,17 +138,40 @@ adminRouter.get('/presets', async (_req, res) => {
 })
 
 adminRouter.post('/presets', async (req, res) => {
-  const { name, indicator = 'utbot', version = 1, params = {}, active = true } = req.body || {}
+  const { name, indicator = 'utbot', indicator_id: indicatorIdBody = null, version = 1, params = {}, active = true } = req.body || {}
   if (!name) return res.status(400).json({ ok: false, error: 'name required' })
+  // Resolve indicator_id (DB NOT NULL)
+  let indicator_id: string | null = indicatorIdBody
+  if (!indicator_id) {
+    const { data: ind, error: indErr } = await supabaseAdmin
+      .from('indicators')
+      .select('id')
+      .eq('key', indicator)
+      .maybeSingle()
+    if (indErr) return res.status(500).json({ ok: false, error: indErr.message })
+    indicator_id = ind?.id ?? null
+  }
+  if (!indicator_id) return res.status(400).json({ ok: false, error: 'indicator_id_required' })
   const id = randomUUID()
-  const { error } = await supabaseAdmin.from('presets').insert({ id, name, indicator, version, params, active })
+  const { error } = await supabaseAdmin.from('presets').insert({ id, name, indicator, indicator_id, version, params, active })
   if (error) return res.status(500).json({ ok: false, error: error.message })
   res.status(201).json({ ok: true, id })
 })
 
 adminRouter.put('/presets/:id', async (req, res) => {
   const { id } = req.params
-  const { error } = await supabaseAdmin.from('presets').update(req.body).eq('id', id)
+  const body = { ...req.body }
+  // Maintain indicator_id consistency if only indicator key provided
+  if (!body.indicator_id && body.indicator) {
+    const { data: ind, error: indErr } = await supabaseAdmin
+      .from('indicators')
+      .select('id')
+      .eq('key', body.indicator)
+      .maybeSingle()
+    if (indErr) return res.status(500).json({ ok: false, error: indErr.message })
+    if (ind?.id) body.indicator_id = ind.id
+  }
+  const { error } = await supabaseAdmin.from('presets').update(body).eq('id', id)
   if (error) return res.status(500).json({ ok: false, error: error.message })
   res.json({ ok: true })
 })
@@ -300,11 +307,191 @@ adminRouter.get('/export-tasklist', async (_req, res) => {
   res.json({ ok: true, tasklist })
 })
 
+// ---------- Indicators CRUD ----------
+// item: { id, name, key, pine_template?: string, default_params?: object, active: boolean }
+adminRouter.get('/indicators', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('indicators').select('*').order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/indicators', async (req, res) => {
+  const { name, key, pine_template = '', default_params = {}, active = true } = req.body || {}
+  if (!name || !key) return res.status(400).json({ ok: false, error: 'name_and_key_required' })
+  const id = randomUUID()
+  const { error } = await supabaseAdmin
+    .from('indicators')
+    .insert({ id, name, key, pine_template, default_params, active })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/indicators/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('indicators').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/indicators/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('indicators').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+// ---------- Coins CRUD ----------
+// item: { id, symbol, exchange, base, quote, display_name, active }
+adminRouter.get('/coins', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('coins').select('*').order('symbol', { ascending: true })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/coins', async (req, res) => {
+  const { symbol, exchange = 'BINANCE', base = null, quote = null, display_name = null, active = true } = req.body || {}
+  if (!symbol) return res.status(400).json({ ok: false, error: 'symbol_required' })
+  const id = randomUUID()
+  const { error } = await supabaseAdmin.from('coins').insert({ id, symbol, exchange, base, quote, display_name, active })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/coins/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('coins').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/coins/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('coins').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+// ---------- Timeframes Master CRUD ----------
+// item: { id, code, display_name, order_index, active }
+adminRouter.get('/tf-master', async (_req, res) => {
+  const { data, error } = await supabaseAdmin.from('timeframes_master').select('*').order('order_index', { ascending: true })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true, items: data })
+})
+
+adminRouter.post('/tf-master', async (req, res) => {
+  const { code, display_name = null, order_index = 0, active = true } = req.body || {}
+  if (!code) return res.status(400).json({ ok: false, error: 'code_required' })
+  const id = randomUUID()
+  const { error } = await supabaseAdmin.from('timeframes_master').insert({ id, code, display_name, order_index, active })
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.status(201).json({ ok: true, id })
+})
+
+adminRouter.put('/tf-master/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('timeframes_master').update(req.body).eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
+adminRouter.delete('/tf-master/:id', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('timeframes_master').delete().eq('id', id)
+  if (error) return res.status(500).json({ ok: false, error: error.message })
+  res.json({ ok: true })
+})
+
 // ---------- Webhook info ----------
 adminRouter.get('/webhook', async (_req, res) => {
   const urlBase = process.env.WEBHOOK_BASE_URL || ''
   const url = urlBase ? `${urlBase}/signals/tradingview` : '/signals/tradingview'
   res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
+})
+
+
+// ---------- Seed: Default UT Bot indicator (with Pine template) ----------
+adminRouter.post('/seed-default-indicators', async (_req, res) => {
+  try {
+    // Check existing by key
+    const { data: exists, error: selErr } = await supabaseAdmin
+      .from('indicators')
+      .select('id')
+      .eq('key', 'utbot')
+      .maybeSingle()
+    if (selErr) return res.status(500).json({ ok: false, error: selErr.message })
+
+    const utbotTemplate = `//@version=5
+indicator("AvoAlert - UT Bot Alerts", overlay=true)
+
+// Preset: {{PRESET_ID}} v{{PRESET_VERSION}}
+{{SECRET_LINE}}
+string indicatorKey = "{{INDICATOR_KEY}}"
+
+// Inputs (from preset/default params)
+a = {{PARAM:key}}        // Key Value (sensitivity)
+c = {{PARAM:atr}}        // ATR Period
+h = {{PARAM:h}}          // Signals from Heikin Ashi Candles
+
+xATR  = ta.atr(c)
+nLoss = a * xATR
+
+src = h ? request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close, barmerge.gaps_off, barmerge.lookahead_off) : close
+
+var float xATRTrailingStop = 0.0
+xATRTrailingStop := src > nz(xATRTrailingStop[1], 0) and src[1] > nz(xATRTrailingStop[1], 0) ? math.max(nz(xATRTrailingStop[1]), src - nLoss) :
+   src < nz(xATRTrailingStop[1], 0) and src[1] < nz(xATRTrailingStop[1], 0) ? math.min(nz(xATRTrailingStop[1]), src + nLoss) : 
+   src > nz(xATRTrailingStop[1], 0) ? src - nLoss : src + nLoss
+ 
+pos = 0   
+pos := src[1] < nz(xATRTrailingStop[1], 0) and src > nz(xATRTrailingStop[1], 0) ? 1 :
+   src[1] > nz(xATRTrailingStop[1], 0) and src < nz(xATRTrailingStop[1], 0) ? -1 : nz(pos[1], 0)
+
+ema1   = ta.ema(src,1)
+above  = ta.crossover(ema1, xATRTrailingStop)
+below  = ta.crossover(xATRTrailingStop, ema1)
+
+buy  = src > xATRTrailingStop and above 
+sell = src < xATRTrailingStop and below
+
+plotshape(buy,  title = "Buy",  text = 'Buy',  style = shape.labelup,   location = location.belowbar, color= color.new(color.green,0), textcolor = color.white, size = size.tiny)
+plotshape(sell, title = "Sell", text = 'Sell', style = shape.labeldown, location = location.abovebar, color= color.new(color.red,0),   textcolor = color.white, size = size.tiny)
+
+// Classic alertcondition (UI) and webhook alert()
+alertcondition(buy,  "UT Long",  "UT Long")
+alertcondition(sell, "UT Short", "UT Short")
+
+make_msg(action) =>
+    ts   = str.tostring(time)
+    sym  = syminfo.ticker
+    tfp  = timeframe.period
+    base = "{\\\"indicator\\\":\\\"" + indicatorKey + "\\\",\\\"symbol\\\":\\\"" + sym + "\\\",\\\"timeframe\\\":\\\"" + tfp + "\\\",\\\"action\\\":\\\"" + action + "\\\",\\\"presetId\\\":\\\"" + "{{PRESET_ID}}" + "\\\",\\\"presetVersion\\\":" + str.tostring({{PRESET_VERSION}}) + ",\\\"ts\\\":\\\"" + ts + "\\\""
+    sec != "" ? base + "{{SECRET_FIELD}}}" : base + "}"
+
+if buy
+    alert(make_msg("buy"), alert.freq_once_per_bar_close)
+if sell
+    alert(make_msg("sell"), alert.freq_once_per_bar_close)
+`
+
+    if (exists) {
+      const { error: updErr } = await supabaseAdmin
+        .from('indicators')
+        .update({ name: 'UT Bot Alerts', pine_template: utbotTemplate, default_params: { key: 1, atr: 10, h: false }, active: true })
+        .eq('id', exists.id)
+      if (updErr) return res.status(500).json({ ok: false, error: updErr.message })
+      return res.json({ ok: true, updated: true })
+    } else {
+      const id = randomUUID()
+      const { error: insErr } = await supabaseAdmin
+        .from('indicators')
+        .insert({ id, name: 'UT Bot Alerts', key: 'utbot', pine_template: utbotTemplate, default_params: { key: 1, atr: 10, h: false }, active: true })
+      if (insErr) return res.status(500).json({ ok: false, error: insErr.message })
+      return res.status(201).json({ ok: true, inserted: true })
+    }
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: (e as Error).message })
+  }
 })
 
 
