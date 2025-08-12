@@ -1,0 +1,1 @@
+[33m4472dec[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m feat(admin): param typing (boolean|number) with casting; preset params inherit types from indicator (read-only in preset); UI polish and independence of dropdowns; minor layout fixes
