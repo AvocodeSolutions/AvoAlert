@@ -24,7 +24,7 @@ async function runWorker() {
       // Read recipients from Supabase Auth (seeded demo users)
       const { data } = await (supabaseAdmin.auth.admin as any).listUsers()
       const users = (data?.users || []).filter((u: any) => u?.email?.endsWith?.('@demo.local'))
-      const deliveries = users.map((user: any) => ({
+      const deliveries = users.map((user: { id: string; email: string }) => ({
         deliveredAt: new Date().toISOString(),
         userId: user.id,
         email: user.email,

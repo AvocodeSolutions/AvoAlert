@@ -70,7 +70,7 @@ adminRouter.get('/users', async (req, res) => {
     const items = await redis.lrange('admin:users', 0, -1)
     const users = items.map((x) => safeParse(x)).filter(Boolean)
     res.json({ ok: true, users })
-  } catch (e) {
+  } catch {
     res.status(500).json({ ok: false, error: 'cannot_fetch_users' })
   }
 })
@@ -93,7 +93,7 @@ adminRouter.get('/notifications', async (req, res) => {
       user: userById.get((d as any).userId) || null,
     }))
     res.json({ ok: true, items: enriched })
-  } catch (e) {
+  } catch {
     res.status(500).json({ ok: false, error: 'cannot_fetch_notifications' })
   }
 })
@@ -421,6 +421,7 @@ adminRouter.post('/seed-default-indicators', async (_req, res) => {
       .maybeSingle()
     if (selErr) return res.status(500).json({ ok: false, error: selErr.message })
 
+    /* eslint-disable no-useless-escape */
     const utbotTemplate = `//@version=5
 indicator("AvoAlert - UT Bot Alerts", overlay=true)
 
@@ -465,7 +466,7 @@ make_msg(action) =>
     ts   = str.tostring(time)
     sym  = syminfo.ticker
     tfp  = timeframe.period
-    base = "{\\\"indicator\\\":\\\"" + indicatorKey + "\\\",\\\"symbol\\\":\\\"" + sym + "\\\",\\\"timeframe\\\":\\\"" + tfp + "\\\",\\\"action\\\":\\\"" + action + "\\\",\\\"presetId\\\":\\\"" + "{{PRESET_ID}}" + "\\\",\\\"presetVersion\\\":" + str.tostring({{PRESET_VERSION}}) + ",\\\"ts\\\":\\\"" + ts + "\\\""
+    base = "{\"indicator\":\"" + indicatorKey + "\",\"symbol\":\"" + sym + "\",\"timeframe\":\"" + tfp + "\",\"action\":\"" + action + "\",\"presetId\":\"" + "{{PRESET_ID}}" + "\",\"presetVersion\":" + str.tostring({{PRESET_VERSION}}) + ",\"ts\":\"" + ts + "\""
     sec != "" ? base + "{{SECRET_FIELD}}}" : base + "}"
 
 if buy

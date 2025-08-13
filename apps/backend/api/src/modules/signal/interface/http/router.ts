@@ -24,7 +24,7 @@ signalRouter.get('/processed', async (req, res) => {
       })
       .filter(Boolean)
     res.json({ ok: true, count: parsed.length, items: parsed })
-  } catch (e) {
+  } catch {
     res.status(500).json({ ok: false, error: 'cannot_fetch_processed' })
   }
 })
@@ -74,8 +74,9 @@ signalRouter.post('/tradingview', async (req, res) => {
     if (setResult !== 'OK') {
       return res.status(409).json({ ok: false, error: 'duplicate_signal', idempotencyKey })
     }
-  } catch (e) {
+  } catch {
     // If Redis not available, we still accept but warn via response
+    void 0
   }
 
   // Execute domain use case (currently validation/echo) and enqueue for async processing
@@ -90,7 +91,9 @@ signalRouter.post('/tradingview', async (req, res) => {
     })
     try {
       await enqueueSignal(signal)
-    } catch {}
+    } catch (_err) {
+      void _err
+    }
     return res.status(201).json({
       ok: true,
       source: 'tradingview',
@@ -100,7 +103,7 @@ signalRouter.post('/tradingview', async (req, res) => {
       action,
       timestamp,
     })
-  } catch (err) {
+  } catch {
     return res.status(500).json({ ok: false, error: 'internal_error' })
   }
 })
