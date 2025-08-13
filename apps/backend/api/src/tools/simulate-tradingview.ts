@@ -6,7 +6,6 @@ type Args = {
   symbol: string
   timeframe: '1m' | '5m' | '15m' | '1h' | '4h' | '1d'
   action: 'buy' | 'sell'
-  price?: number
   timestamp?: string
   count: number
   intervalMs: number
@@ -18,7 +17,6 @@ function parseArgs(): Args {
     symbol: process.env.SIMULATE_TV_SYMBOL || 'BINANCE:BTCUSDT',
     timeframe: (process.env.SIMULATE_TV_TIMEFRAME as Args['timeframe']) || '15m',
     action: (process.env.SIMULATE_TV_ACTION as Args['action']) || 'buy',
-    price: process.env.SIMULATE_TV_PRICE ? Number(process.env.SIMULATE_TV_PRICE) : undefined,
     timestamp: process.env.SIMULATE_TV_TIMESTAMP,
     count: process.env.SIMULATE_TV_COUNT ? Number(process.env.SIMULATE_TV_COUNT) : 1,
     intervalMs: process.env.SIMULATE_TV_INTERVAL ? Number(process.env.SIMULATE_TV_INTERVAL) : 500,
@@ -46,10 +44,6 @@ function parseArgs(): Args {
         defaults.action = val as Args['action']
         i++
         break
-      case '--price':
-        defaults.price = Number(val)
-        i++
-        break
       case '--timestamp':
         defaults.timestamp = val
         i++
@@ -71,10 +65,6 @@ function parseArgs(): Args {
 
 function nowIso(): string {
   return new Date().toISOString()
-}
-
-function randomPrice(base = 67000, spread = 200): number {
-  return Math.round((base + (Math.random() - 0.5) * 2 * spread) * 100) / 100
 }
 
 async function sleep(ms: number) {
@@ -112,7 +102,6 @@ async function main() {
       symbol: args.symbol,
       timeframe: args.timeframe,
       action: args.action,
-      price: args.price ?? randomPrice(),
       timestamp: args.timestamp || nowIso(),
       secret,
       source: 'tradingview',

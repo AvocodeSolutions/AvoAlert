@@ -41,22 +41,43 @@ signalRouter.post('/ingest', async (req, res) => {
 
 // TradingView webhook endpoint with validation, secret check, and idempotency
 signalRouter.post('/tradingview', async (req, res) => {
+  // Normalize legacy keys from script-generated payloads
+  const raw = { ...(req.body || {}) }
+  if (!raw.timestamp && raw.ts) raw.timestamp = raw.ts
+
   const schema = z.object({
     symbol: z.string().min(1),
     timeframe: z.enum(['1m', '5m', '15m', '1h', '4h', '1d']),
     action: z.enum(['buy', 'sell']),
-    price: z.number().optional(),
-    timestamp: z.string().datetime({ offset: true }),
+    // Accept ISO8601 string OR unix seconds/milliseconds (string or number)
+    timestamp: z.union([
+      z.string().datetime({ offset: true }),
+      z.number(),
+      z.string().regex(/^\d+$/),
+    ]),
     secret: z.string().min(8),
     source: z.string().optional(),
   })
 
-  const parse = schema.safeParse(req.body)
+  const parse = schema.safeParse(raw)
   if (!parse.success) {
     return res.status(400).json({ ok: false, error: 'validation_error', details: parse.error.issues })
   }
 
-  const { symbol, timeframe, action, price, timestamp, secret } = parse.data
+  const { symbol, timeframe, action, timestamp, secret } = parse.data
+
+  function toIsoTimestamp(input: string | number): string {
+    if (typeof input === 'number') {
+      const ms = input > 1e12 ? input : input * 1000
+      return new Date(ms).toISOString()
+    }
+    if (/^\d+$/.test(input)) {
+      const asNum = Number(input)
+      const ms = asNum > 1e12 ? asNum : asNum * 1000
+      return new Date(ms).toISOString()
+    }
+    return input
+  }
 
   // Secret check
   if (!process.env.TRADINGVIEW_WEBHOOK_SECRET || secret !== process.env.TRADINGVIEW_WEBHOOK_SECRET) {
@@ -67,7 +88,8 @@ signalRouter.post('/tradingview', async (req, res) => {
   const normalizedSymbol = symbol.includes(':') ? symbol.split(':')[1] : symbol.replace('/', '')
 
   // Idempotency: symbol + timeframe + timestamp + action
-  const idempotencyKey = `${normalizedSymbol}:${timeframe}:${timestamp}:${action}`
+  const timestampIso = toIsoTimestamp(timestamp as any)
+  const idempotencyKey = `${normalizedSymbol}:${timeframe}:${timestampIso}:${action}`
   try {
     // SET NX EX 300 -> prevent duplicates for 5 minutes
     const setResult = await redis.set(`idemp:${idempotencyKey}`, '1', { nx: true, ex: 300 })
@@ -86,8 +108,7 @@ signalRouter.post('/tradingview', async (req, res) => {
       symbol: normalizedSymbol,
       timeframe,
       action,
-      price,
-      timestamp,
+      timestamp: timestampIso,
     })
     try {
       await enqueueSignal(signal)

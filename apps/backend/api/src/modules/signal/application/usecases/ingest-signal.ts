@@ -8,13 +8,8 @@ export class IngestSignalUseCase implements SignalIngestUseCase {
     if (!body?.symbol || !body?.timeframe || !body?.action || !body?.timestamp) {
       throw new Error('Invalid signal payload')
     }
-    
-    // Default price if not provided (for backward compatibility)
-    const price = typeof body.price === 'number' ? body.price : 0
-    
     return {
       ...body,
-      price,
     } as TradingSignal
   }
 }

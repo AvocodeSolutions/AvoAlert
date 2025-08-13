@@ -106,13 +106,12 @@ adminRouter.post('/clear-notifications', async (req, res) => {
 // Simulate a signal without TradingView, for testing
 adminRouter.post('/simulate-signal', async (req, res) => {
   try {
-    const { symbol = 'BTCUSDT', timeframe = '15m', action = 'buy', price = 50000 } = req.body || {}
+    const { symbol = 'BTCUSDT', timeframe = '15m', action = 'buy' } = req.body || {}
     const uc = new IngestSignalUseCase()
     const signal = await uc.execute({
       symbol: String(symbol),
       timeframe: String(timeframe),
       action: action === 'sell' ? 'sell' : 'buy',
-      price: Number(price),
       timestamp: new Date().toISOString(),
     })
     await enqueueSignal(signal)
@@ -404,9 +403,67 @@ adminRouter.delete('/tf-master/:id', async (req, res) => {
 
 // ---------- Webhook info ----------
 adminRouter.get('/webhook', async (_req, res) => {
-  const urlBase = process.env.WEBHOOK_BASE_URL || ''
-  const url = urlBase ? `${urlBase}/signals/tradingview` : '/signals/tradingview'
-  res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
+  try {
+    const configured = await redis.get<string>('admin:webhook_base_url').catch(() => null)
+    const urlBase = (configured as string) || process.env.WEBHOOK_BASE_URL || ''
+    const url = urlBase ? `${urlBase}/signals/tradingview` : '/signals/tradingview'
+    res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
+  } catch {
+    const url = '/signals/tradingview'
+    res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
+  }
+})
+
+// Set or override public webhook base URL at runtime (stored in Redis)
+adminRouter.post('/webhook-base', async (req, res) => {
+  try {
+    const { urlBase } = req.body || {}
+    if (!urlBase || typeof urlBase !== 'string' || !/^https?:\/\//i.test(urlBase)) {
+      return res.status(400).json({ ok: false, error: 'invalid_urlBase' })
+    }
+    await redis.set('admin:webhook_base_url', urlBase)
+    return res.json({ ok: true })
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: (e as Error).message })
+  }
+})
+
+// ---------- Queue monitoring ----------
+adminRouter.get('/queue-stats', async (_req, res) => {
+  try {
+    const [qSignal, processed, notifications, enqueued] = await Promise.all([
+      redis.llen('q:signal').catch(() => 0),
+      redis.llen('q:signal:processed').catch(() => 0),
+      redis.llen('admin:notifications').catch(() => 0),
+      redis.llen('q:signal:enqueued').catch(() => 0),
+    ])
+    res.json({ ok: true, qSignal, processed, notifications, enqueued })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
+})
+
+adminRouter.get('/queue-peek', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 20), 100)
+    const raw = await redis.lrange('q:signal', -limit, -1)
+    const items = raw
+      .map((x) => safeParse(x))
+      .filter(Boolean)
+    res.json({ ok: true, items })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
+})
+
+adminRouter.get('/enqueued', async (_req, res) => {
+  try {
+    const itemsRaw = await redis.lrange('q:signal:enqueued', 0, 49)
+    const items = itemsRaw.map((x) => safeParse(x)).filter(Boolean)
+    res.json({ ok: true, items })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
 })
 
 
