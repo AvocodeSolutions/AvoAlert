@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/app.js",
     "worker": "tsx watch src/workers/signal-consumer.ts",
+    "notification-worker": "tsx watch src/workers/notification-worker.ts",
     "simulate": "tsx src/tools/simulate-tradingview.ts",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit"

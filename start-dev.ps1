@@ -1,24 +1,34 @@
-# Run from repo root: powershell -ExecutionPolicy Bypass -File .\start-dev.ps1
+# AvoAlert Development Startup Script
+Write-Host "Starting AvoAlert Development Environment..." -ForegroundColor Green
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Start Frontend
+Write-Host "Starting Frontend..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd apps\frontend\web-client; npm run dev"
+Start-Sleep -Seconds 3
 
-function Start-Task($title, $dir, $cmd) {
-  Start-Process -FilePath "powershell.exe" `
-    -ArgumentList @(
-      "-NoExit",
-      "-Command",
-      "Write-Host `[${title}] $dir` -ForegroundColor Cyan; cd `"$dir`"; npm install --silent; $cmd"
-    ) `
-    -WorkingDirectory $dir
-}
+# Start Backend API
+Write-Host "Starting Backend API..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd apps\backend\api; npm run dev"
+Start-Sleep -Seconds 3
 
-# 1) API (http://localhost:4000)
-Start-Task "API" "$root\apps\backend\api" "npm run dev"
+# Start Signal Worker
+Write-Host "Starting Signal Worker..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd apps\backend\api; npm run worker"
+Start-Sleep -Seconds 3
 
-# 2) Worker
-Start-Task "Worker" "$root\apps\backend\api" "npm run worker"
+# Start Notification Worker
+Write-Host "Starting Notification Worker..." -ForegroundColor Yellow
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd apps\backend\api; npm run notification-worker"
 
-# 3) Frontend (http://localhost:3000)
-Start-Task "WEB" "$root\apps\frontend\web-client" "$env:NEXT_PUBLIC_API_BASE='http://localhost:4000'; npm run dev"
-
-
+Write-Host ""
+Write-Host "All services started!" -ForegroundColor Green
+Write-Host ""
+Write-Host "URLs:" -ForegroundColor Cyan
+Write-Host "  Frontend: http://localhost:3000" -ForegroundColor White
+Write-Host "  Customer: http://localhost:3000/customer/dashboard" -ForegroundColor White
+Write-Host "  Backend:  http://localhost:4000" -ForegroundColor White
+Write-Host ""
+Write-Host "Test: cd apps\backend\api; npm run simulate -- --symbol CRV --action buy" -ForegroundColor White
+Write-Host ""
+Write-Host "Press any key to exit..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

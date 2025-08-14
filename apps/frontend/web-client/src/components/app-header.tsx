@@ -26,6 +26,7 @@ export default function AppHeader() {
             </Link>
           </div>
           <nav className="flex items-center gap-2">
+            <NavBtn href="/customer/dashboard" label="Customer" />
             <NavBtn href="/admin/monitoring" label="Monitoring" />
             <NavBtn href="/admin/test-panel" label="Webhook" />
             <NavBtn href="/admin/alerts" label="Alerts & Scripts" />

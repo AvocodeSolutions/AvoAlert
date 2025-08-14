@@ -36,8 +36,11 @@ export default function Home() {
               🔔 Push Notifications
             </Badge>
           </div>
-          <div className="mt-5 max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-3 md:mt-8">
+          <div className="mt-5 max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:mt-8">
             <Button asChild size="lg" className="w-full">
+              <a href="/customer/dashboard">Customer Dashboard</a>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="w-full">
               <a href="/admin/monitoring">Monitoring Panel</a>
             </Button>
             <Button asChild variant="outline" size="lg" className="w-full">
