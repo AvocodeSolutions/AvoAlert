@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000'
+const API_BASE = '' // use local Next.js API routes on Vercel: /api/monitor/*
 
 type QueueStats = { qSignal: number; processed: number; notifications: number }
 type Processed = { processedAt: string; symbol: string; timeframe: string; action: 'buy' | 'sell' }
@@ -16,10 +16,10 @@ export default function MonitoringPage() {
   const [refreshMs, setRefreshMs] = useState(2000)
   const [busy, setBusy] = useState(false)
 
-  const statsUrl = useMemo(() => `${API_BASE}/admin/queue-stats`, [])
-  const processedUrl = useMemo(() => `${API_BASE}/signals/processed`, [])
-  const peekUrl = useMemo(() => `${API_BASE}/admin/queue-peek?limit=20`, [])
-  const enqueuedUrl = useMemo(() => `${API_BASE}/admin/enqueued`, [])
+  const statsUrl = useMemo(() => `/api/monitor/queue-stats`, [])
+  const processedUrl = useMemo(() => `/api/monitor/processed`, [])
+  const peekUrl = useMemo(() => `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000'}/admin/queue-peek?limit=20`, [])
+  const enqueuedUrl = useMemo(() => `/api/monitor/enqueued`, [])
 
   async function refreshAll() {
     setBusy(true)

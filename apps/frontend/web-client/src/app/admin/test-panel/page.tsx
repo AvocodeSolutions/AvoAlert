@@ -36,6 +36,7 @@ export default function AdminTestPanel() {
   const notificationsUrl = useMemo(() => `${API_BASE}/admin/notifications`, [])
   const webhookInfoUrl = useMemo(() => `${API_BASE}/admin/webhook`, [])
   const vercelTvEndpoint = typeof window !== 'undefined' ? `${location.origin}/api/tradingview` : ''
+  const singleWebhookUrl = vercelTvEndpoint || '/api/tradingview'
 
   const webhookMessage = useMemo(() => {
     const secret = webhook?.secret || 'SECRET_BURAYA'
@@ -142,30 +143,28 @@ export default function AdminTestPanel() {
         <CardContent className="space-y-3">
           <div className="text-sm text-gray-700">
             <div>
-              <b>Webhook URL:</b>{' '}
-              {webhook?.url ? (
-                <a className="text-blue-600 hover:underline" href={webhook.url} target="_blank" rel="noreferrer">
-                  {webhook.url}
-                </a>
-              ) : (
-                <span className="text-gray-500">Yükleniyor...</span>
-              )}
+              <b>Tek Webhook URL:</b>{' '}
+              <a className="text-blue-600 hover:underline" href={singleWebhookUrl} target="_blank" rel="noreferrer">
+                {singleWebhookUrl}
+              </a>
             </div>
             <div>
               <b>Secret:</b> <span className="select-all">{webhook?.secret || 'SECRET_BURAYA'}</span>
             </div>
           </div>
           <div className="text-sm">
-            <div className="font-medium mb-1">TradingView Message (JSON)</div>
+            <div className="font-medium mb-1">TradingView Alarm Kurulumu (Tek Yöntem)</div>
+            <ol className="list-decimal pl-5 text-xs space-y-1 text-gray-700">
+              <li>Condition: <b>Any alert() function call</b></li>
+              <li>Message: <b>Boş</b> (Pine içindeki <code>make_msg()</code> JSON&amp;apos;u üretir)</li>
+              <li>Webhook URL: <code className="select-all bg-gray-100 px-1 py-0.5 rounded">{singleWebhookUrl}</code></li>
+            </ol>
+            <div className="mt-3 text-xs text-gray-600">İstersen manuel test (Postman/curl) için JSON örneği:</div>
             <pre className="text-xs overflow-auto max-h-64 bg-gray-50 p-3 rounded border">{webhookMessage}</pre>
-            <p className="mt-2 text-xs text-gray-600">
-              Kısa Özet: 1) Webhook URL’yi TradingView alarmındaki Webhook URL alanına yapıştır. 2) Yukarıdaki JSON’u Message alanına
-              yapıştır. 3) Alarmı bar kapanışında tetikle. 4) Aşağıdaki listelerde sonuçları gör.
-            </p>
             <div className="mt-2 text-xs">
-              <div className="font-semibold">Vercel üzerinde kullanmak istersen:</div>
-              <div>Webhook URL: <code className="select-all bg-gray-100 px-1 py-0.5 rounded">{vercelTvEndpoint || '/api/tradingview'}</code></div>
-              <div>Not: Vercel ortam değişkenleri: <code>UPSTASH_REDIS_REST_URL</code>, <code>UPSTASH_REDIS_REST_TOKEN</code>, <code>TRADINGVIEW_WEBHOOK_SECRET</code> ayarlı olmalı.</div>
+              <div className="font-semibold">Vercel üzerinde:</div>
+              <div>Webhook URL: <code className="select-all bg-gray-100 px-1 py-0.5 rounded">{singleWebhookUrl}</code></div>
+              <div>Env: <code>UPSTASH_REDIS_REST_URL</code>, <code>UPSTASH_REDIS_REST_TOKEN</code>, <code>TRADINGVIEW_WEBHOOK_SECRET</code></div>
             </div>
             <div className="mt-3">
               <div className="text-xs text-gray-600 mb-1">Public URL yoksa (ör. ngrok/lt) aşağıya base URL yapıştırıp kaydet:</div>
