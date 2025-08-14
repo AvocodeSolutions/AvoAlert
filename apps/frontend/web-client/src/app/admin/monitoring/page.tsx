@@ -18,7 +18,7 @@ export default function MonitoringPage() {
 
   const statsUrl = useMemo(() => `/api/monitor/queue-stats`, [])
   const processedUrl = useMemo(() => `/api/monitor/processed`, [])
-  const peekUrl = useMemo(() => `${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000'}/admin/queue-peek?limit=20`, [])
+  const peekUrl = useMemo(() => `/api/monitor/queue-peek?limit=20`, [])
   const enqueuedUrl = useMemo(() => `/api/monitor/enqueued`, [])
 
   async function refreshAll() {
