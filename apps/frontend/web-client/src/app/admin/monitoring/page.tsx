@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 
 const API_BASE = '' // use local Next.js API routes on Vercel: /api/monitor/*
 
-type QueueStats = { qSignal: number; processed: number; notifications: number }
+type QueueStats = { qSignal: number; processed: number; notifications: number; enqueued: number }
 type Processed = { processedAt: string; symbol: string; timeframe: string; action: 'buy' | 'sell' }
 
 export default function MonitoringPage() {
@@ -64,11 +64,17 @@ export default function MonitoringPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader>
               <CardDescription>Queue Length</CardDescription>
               <CardTitle className="text-3xl">{stats?.qSignal ?? 0}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Enqueued (total)</CardDescription>
+              <CardTitle className="text-3xl">{stats?.enqueued ?? 0}</CardTitle>
             </CardHeader>
           </Card>
           <Card>
