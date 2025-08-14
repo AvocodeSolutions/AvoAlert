@@ -22,6 +22,7 @@ interface UserAlarm {
   id: string
   email: string
   coin_symbol: string
+  action: string
   is_active: boolean
   created_at: string
 }
@@ -44,6 +45,7 @@ export default function CustomerDashboard() {
   const [triggeredAlarms, setTriggeredAlarms] = useState<TriggeredAlarm[]>([])
   const [email, setEmail] = useState('emrecanergin12@hotmail.com')
   const [selectedCoin, setSelectedCoin] = useState('')
+  const [selectedAction, setSelectedAction] = useState('buy')
   // Timeframe is managed by admin presets, not customer choice
   const [loading, setLoading] = useState(false)
 
@@ -83,8 +85,8 @@ export default function CustomerDashboard() {
 
   // Create new alarm
   const createAlarm = async () => {
-    if (!email || !selectedCoin) {
-      toast.error('Email ve coin seçimi gerekli!')
+    if (!email || !selectedCoin || !selectedAction) {
+      toast.error('Email, coin ve aksiyon seçimi gerekli!')
       return
     }
 
@@ -96,7 +98,8 @@ export default function CustomerDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          coin_symbol: selectedCoin
+          coin_symbol: selectedCoin,
+          action: selectedAction
         })
       })
 
@@ -104,6 +107,7 @@ export default function CustomerDashboard() {
         toast.success('Alarm başarıyla oluşturuldu!')
         await fetchAlarms()
         setSelectedCoin('')
+        setSelectedAction('buy')
       } else {
         const error = await response.json()
         toast.error(error.message || 'Alarm oluşturulamadı!')
@@ -208,7 +212,7 @@ export default function CustomerDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="coin">Coin</Label>
               <Select value={selectedCoin} onValueChange={setSelectedCoin}>
@@ -223,21 +227,44 @@ export default function CustomerDashboard() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Tüm zaman dilimleri için alarm alacaksınız
-              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="action">Sinyal Tipi</Label>
+              <Select value={selectedAction} onValueChange={setSelectedAction}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="buy">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      BUY (Alış)
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="sell">
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      SELL (Satış)
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-end">
               <Button 
                 onClick={createAlarm} 
-                disabled={loading || !email || !selectedCoin}
+                disabled={loading || !email || !selectedCoin || !selectedAction}
                 className="w-full"
               >
                 {loading ? 'Oluşturuluyor...' : 'Alarm Oluştur'}
               </Button>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            BUY veya SELL - sadece seçilen sinyal tipini alacaksınız
+          </p>
         </CardContent>
       </Card>
 
@@ -264,17 +291,24 @@ export default function CustomerDashboard() {
                     key={`alarm-${alarm.id}`}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline" className="text-lg font-semibold">
-                          {alarm.coin_symbol}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          Tüm zaman dilimleri
-                        </span>
-                        <Badge variant={alarm.is_active ? "default" : "secondary"}>
-                          {alarm.is_active ? "Aktif" : "Pasif"}
-                        </Badge>
-                      </div>
+                                          <div className="flex items-center gap-4">
+                      <Badge variant="outline" className="text-lg font-semibold">
+                        {alarm.coin_symbol}
+                      </Badge>
+                      <Badge 
+                        variant="outline"
+                        className={`
+                          ${alarm.action === 'buy' ? 'border-green-500 text-green-700 bg-green-50' : ''}
+                          ${alarm.action === 'sell' ? 'border-red-500 text-red-700 bg-red-50' : ''}
+                        `}
+                      >
+                        {alarm.action === 'buy' && '🟢 BUY'}
+                        {alarm.action === 'sell' && '🔴 SELL'}
+                      </Badge>
+                      <Badge variant={alarm.is_active ? "default" : "secondary"}>
+                        {alarm.is_active ? "Aktif" : "Pasif"}
+                      </Badge>
+                    </div>
                       <Button
                         variant="outline"
                         size="sm"
@@ -321,10 +355,14 @@ export default function CustomerDashboard() {
                             {triggered.coin_symbol}
                           </Badge>
                           <Badge 
-                            variant={triggered.action === 'buy' ? 'default' : 'destructive'}
-                            className="uppercase"
+                            variant="outline"
+                            className={`uppercase font-semibold ${
+                              triggered.action === 'buy' 
+                                ? 'border-green-500 text-green-700 bg-green-100' 
+                                : 'border-red-500 text-red-700 bg-red-100'
+                            }`}
                           >
-                            {triggered.action}
+                            {triggered.action === 'buy' ? '🟢 BUY' : '🔴 SELL'}
                           </Badge>
                         </div>
                         <span className="text-xs text-muted-foreground">

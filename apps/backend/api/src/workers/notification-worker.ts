@@ -36,11 +36,12 @@ async function runNotificationWorker() {
       
       console.log('[notification-worker] Processing signal for notifications:', signal)
 
-      // Find active user alarms for this exact coin symbol
+      // Find active user alarms for this exact coin symbol and action
       const { data: userAlarms, error } = await supabaseAdmin
         .from('user_alarms')
         .select('*')
         .eq('coin_symbol', signal.symbol)
+        .eq('action', signal.action)
         .eq('is_active', true)
 
       if (error) {
@@ -49,11 +50,11 @@ async function runNotificationWorker() {
       }
 
       if (!userAlarms || userAlarms.length === 0) {
-        console.log(`[notification-worker] No active alarms found for ${signal.symbol}`)
+        console.log(`[notification-worker] No active alarms found for ${signal.symbol} ${signal.action}`)
         continue
       }
 
-      console.log(`[notification-worker] Found ${userAlarms.length} active alarms for ${signal.symbol}`)
+      console.log(`[notification-worker] Found ${userAlarms.length} active alarms for ${signal.symbol} ${signal.action}`)
 
       // Process each user alarm
       for (const alarm of userAlarms) {

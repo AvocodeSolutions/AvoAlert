@@ -45,18 +45,24 @@ notificationRouter.get('/user-alarms', async (req, res) => {
 // Create user alarm
 notificationRouter.post('/user-alarms', async (req, res) => {
   try {
-    const { email, coin_symbol } = req.body || {}
+    const { email, coin_symbol, action = 'buy' } = req.body || {}
     
-    if (!email || !coin_symbol) {
-      return res.status(400).json({ ok: false, error: 'email_and_coin_symbol_required' })
+    if (!email || !coin_symbol || !action) {
+      return res.status(400).json({ ok: false, error: 'email_coin_symbol_and_action_required' })
     }
 
-    // Check if alarm already exists
+    // Validate action
+    if (!['buy', 'sell'].includes(action)) {
+      return res.status(400).json({ ok: false, error: 'invalid_action_must_be_buy_or_sell' })
+    }
+
+    // Check if alarm already exists with same coin + action
     const { data: existing } = await supabaseAdmin
       .from('user_alarms')
       .select('id')
       .eq('email', email)
       .eq('coin_symbol', coin_symbol)
+      .eq('action', action)
       .eq('is_active', true)
       .single()
 
@@ -64,7 +70,7 @@ notificationRouter.post('/user-alarms', async (req, res) => {
       return res.status(400).json({ 
         ok: false, 
         error: 'alarm_exists',
-        message: 'Bu coin için zaten aktif alarm var!' 
+        message: `Bu coin için ${action} tipinde zaten aktif alarm var!` 
       })
     }
 
@@ -90,6 +96,7 @@ notificationRouter.post('/user-alarms', async (req, res) => {
       .insert([{
         email,
         coin_symbol,
+        action,
         is_active: true
       }])
       .select()
