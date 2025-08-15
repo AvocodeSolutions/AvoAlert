@@ -87,14 +87,24 @@ signalRouter.post('/tradingview', async (req, res) => {
   // Normalize symbol: BINANCE:BTCUSDT | BTC/USDT | BTCUSDT -> BTCUSDT
   const normalizedSymbol = symbol.includes(':') ? symbol.split(':')[1] : symbol.replace('/', '')
 
-  // Idempotency: symbol + timeframe + timestamp + action
+  // Idempotency: More flexible duplicate detection
   const timestampIso = toIsoTimestamp(timestamp as any)
-  const idempotencyKey = `${normalizedSymbol}:${timeframe}:${timestampIso}:${action}`
+  // Round timestamp to nearest minute to reduce excessive duplicate blocking
+  const roundedTimestamp = new Date(timestampIso)
+  roundedTimestamp.setSeconds(0, 0)
+  const idempotencyKey = `${normalizedSymbol}:${timeframe}:${roundedTimestamp.toISOString()}:${action}`
+  
   try {
-    // SET NX EX 300 -> prevent duplicates for 5 minutes
-    const setResult = await redis.set(`idemp:${idempotencyKey}`, '1', { nx: true, ex: 300 })
+    // SET NX EX 60 -> prevent duplicates for 1 minute (reduced from 5 minutes)
+    const setResult = await redis.set(`idemp:${idempotencyKey}`, '1', { nx: true, ex: 60 })
     if (setResult !== 'OK') {
-      return res.status(409).json({ ok: false, error: 'duplicate_signal', idempotencyKey })
+      return res.status(409).json({ 
+        ok: false, 
+        error: 'duplicate_signal', 
+        message: 'Bu sinyal son 1 dakika içinde zaten işlendi',
+        idempotencyKey,
+        suggestion: 'Lütfen birkaç saniye bekleyip tekrar deneyin'
+      })
     }
   } catch {
     // If Redis not available, we still accept but warn via response

@@ -1,8 +1,6 @@
 import { Router } from 'express'
 import { redis } from '../../infrastructure/queue/upstash'
 import { randomUUID } from 'crypto'
-import { enqueueSignal } from '../signal/application/usecases/enqueue-signal'
-import { IngestSignalUseCase } from '../signal/application/usecases/ingest-signal'
 import { supabaseAdmin } from '../../infrastructure/supabase/client'
 
 export const adminRouter = Router()
@@ -16,83 +14,15 @@ function safeParse<T = any>(value: unknown): T | null {
   }
 }
 
-// Supabase Auth: Seed dummy users via admin API (email_confirmed:true)
-adminRouter.post('/seed-users-supabase', async (req, res) => {
-  try {
-    const num = Number(req.query.count || 5)
-    const created: any[] = []
-    for (let i = 0; i < num; i++) {
-      const email = `${Math.random().toString(36).slice(2, 10)}@demo.local`
-      const { data, error } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: randomUUID(),
-        email_confirm: true,
-        user_metadata: { seeded: true },
-      } as any)
-      if (error) throw error
-      created.push({ id: data.user?.id, email: data.user?.email })
-    }
-    res.json({ ok: true, users: created })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
 
-adminRouter.get('/users-supabase', async (req, res) => {
-  try {
-    const { data, error } = await (supabaseAdmin.auth.admin as any).listUsers()
-    if (error) throw error
-    const users = (data?.users || []).map((u: any) => ({ id: u.id, email: u.email }))
-    res.json({ ok: true, users })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
 
-adminRouter.post('/clear-users-supabase', async (req, res) => {
-  try {
-    const { data, error } = await (supabaseAdmin.auth.admin as any).listUsers()
-    if (error) throw error
-    const users: any[] = data?.users || []
-    for (const u of users) {
-      if (u?.email?.endsWith('@demo.local')) {
-        await supabaseAdmin.auth.admin.deleteUser(u.id)
-      }
-    }
-    res.json({ ok: true })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
 
-adminRouter.get('/users', async (req, res) => {
-  try {
-    const items = await redis.lrange('admin:users', 0, -1)
-    const users = items.map((x) => safeParse(x)).filter(Boolean)
-    res.json({ ok: true, users })
-  } catch {
-    res.status(500).json({ ok: false, error: 'cannot_fetch_users' })
-  }
-})
-
-adminRouter.post('/clear-users', async (req, res) => {
-  await redis.del('admin:users')
-  res.json({ ok: true })
-})
-
+// ---------- Notification System Endpoints ----------
 adminRouter.get('/notifications', async (req, res) => {
   try {
     const items = await redis.lrange('admin:notifications', 0, 49)
     const parsed = items.map((x) => safeParse(x)).filter(Boolean) as any[]
-    // join with users for richer detail
-    const usersRaw = await redis.lrange('admin:users', 0, -1)
-    const users = usersRaw.map((x) => safeParse(x)).filter(Boolean) as any[]
-    const userById = new Map(users.map((u: any) => [u.id, u]))
-    const enriched = parsed.map((d) => ({
-      ...d,
-      user: userById.get((d as any).userId) || null,
-    }))
-    res.json({ ok: true, items: enriched })
+    res.json({ ok: true, items: parsed })
   } catch {
     res.status(500).json({ ok: false, error: 'cannot_fetch_notifications' })
   }
@@ -103,29 +33,53 @@ adminRouter.post('/clear-notifications', async (req, res) => {
   res.json({ ok: true })
 })
 
-// Simulate a signal without TradingView, for testing
-adminRouter.post('/simulate-signal', async (req, res) => {
+// Get triggered alarms
+adminRouter.get('/triggered-alarms', async (req, res) => {
   try {
-    const { symbol = 'BTCUSDT', timeframe = '15m', action = 'buy' } = req.body || {}
-    const uc = new IngestSignalUseCase()
-    const signal = await uc.execute({
-      symbol: String(symbol),
-      timeframe: String(timeframe),
-      action: action === 'sell' ? 'sell' : 'buy',
-      timestamp: new Date().toISOString(),
-    })
-    await enqueueSignal(signal)
-    return res.status(201).json({ ok: true, signal })
-  } catch (e) {
-    return res.status(400).json({ ok: false, error: (e as Error).message })
+    const items = await redis.lrange('triggered_alarms', 0, 49)
+    const parsed = items.map((x) => safeParse(x)).filter(Boolean) as any[]
+    res.json({ ok: true, items: parsed })
+  } catch {
+    res.status(500).json({ ok: false, error: 'cannot_fetch_triggered_alarms' })
   }
 })
 
-adminRouter.post('/reset-all', async (req, res) => {
-  await redis.del('admin:users')
-  await redis.del('admin:notifications')
-  await redis.del('q:signal:processed')
-  res.json({ ok: true })
+// ---------- Queue monitoring (for monitoring page) ----------
+adminRouter.get('/queue-stats', async (_req, res) => {
+  try {
+    const [qSignal, processed, notifications, enqueued] = await Promise.all([
+      redis.llen('q:signal').catch(() => 0),
+      redis.llen('q:signal:processed').catch(() => 0),
+      redis.llen('admin:notifications').catch(() => 0),
+      redis.llen('q:signal:enqueued').catch(() => 0),
+    ])
+    res.json({ ok: true, qSignal, processed, notifications, enqueued })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
+})
+
+adminRouter.get('/queue-peek', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit || 20), 100)
+    const raw = await redis.lrange('q:signal', -limit, -1)
+    const items = raw
+      .map((x) => safeParse(x))
+      .filter(Boolean)
+    res.json({ ok: true, items })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
+})
+
+adminRouter.get('/enqueued', async (_req, res) => {
+  try {
+    const itemsRaw = await redis.lrange('q:signal:enqueued', 0, 49)
+    const items = itemsRaw.map((x) => safeParse(x)).filter(Boolean)
+    res.json({ ok: true, items })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
 })
 
 // ---------- Presets CRUD ----------
@@ -401,70 +355,7 @@ adminRouter.delete('/tf-master/:id', async (req, res) => {
   res.json({ ok: true })
 })
 
-// ---------- Webhook info ----------
-adminRouter.get('/webhook', async (_req, res) => {
-  try {
-    const configured = await redis.get<string>('admin:webhook_base_url').catch(() => null)
-    const urlBase = (configured as string) || process.env.WEBHOOK_BASE_URL || ''
-    const url = urlBase ? `${urlBase}/signals/tradingview` : '/signals/tradingview'
-    res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
-  } catch {
-    const url = '/signals/tradingview'
-    res.json({ ok: true, url, secret: process.env.TRADINGVIEW_WEBHOOK_SECRET || '' })
-  }
-})
 
-// Set or override public webhook base URL at runtime (stored in Redis)
-adminRouter.post('/webhook-base', async (req, res) => {
-  try {
-    const { urlBase } = req.body || {}
-    if (!urlBase || typeof urlBase !== 'string' || !/^https?:\/\//i.test(urlBase)) {
-      return res.status(400).json({ ok: false, error: 'invalid_urlBase' })
-    }
-    await redis.set('admin:webhook_base_url', urlBase)
-    return res.json({ ok: true })
-  } catch (e) {
-    return res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
-
-// ---------- Queue monitoring ----------
-adminRouter.get('/queue-stats', async (_req, res) => {
-  try {
-    const [qSignal, processed, notifications, enqueued] = await Promise.all([
-      redis.llen('q:signal').catch(() => 0),
-      redis.llen('q:signal:processed').catch(() => 0),
-      redis.llen('admin:notifications').catch(() => 0),
-      redis.llen('q:signal:enqueued').catch(() => 0),
-    ])
-    res.json({ ok: true, qSignal, processed, notifications, enqueued })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
-
-adminRouter.get('/queue-peek', async (req, res) => {
-  try {
-    const limit = Math.min(Number(req.query.limit || 20), 100)
-    const raw = await redis.lrange('q:signal', -limit, -1)
-    const items = raw
-      .map((x) => safeParse(x))
-      .filter(Boolean)
-    res.json({ ok: true, items })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
-
-adminRouter.get('/enqueued', async (_req, res) => {
-  try {
-    const itemsRaw = await redis.lrange('q:signal:enqueued', 0, 49)
-    const items = itemsRaw.map((x) => safeParse(x)).filter(Boolean)
-    res.json({ ok: true, items })
-  } catch (e) {
-    res.status(500).json({ ok: false, error: (e as Error).message })
-  }
-})
 
 
 // ---------- Seed: Default UT Bot indicator (with Pine template) ----------

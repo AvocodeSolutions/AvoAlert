@@ -10,7 +10,8 @@ const supabase = createClient(
 const createAlarmSchema = z.object({
   email: z.string().email(),
   coin_symbol: z.string().min(1),
-  timeframe: z.string().min(1)
+  timeframe: z.string().min(1),
+  action: z.enum(['buy', 'sell'])
 })
 
 export async function GET(req: NextRequest) {
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       .eq('email', parsed.email)
       .eq('coin_symbol', parsed.coin_symbol)
       .eq('timeframe', parsed.timeframe)
+      .eq('action', parsed.action)
       .eq('is_active', true)
       .single()
 
@@ -87,6 +89,7 @@ export async function POST(req: NextRequest) {
         email: parsed.email,
         coin_symbol: parsed.coin_symbol,
         timeframe: parsed.timeframe,
+        action: parsed.action,
         is_active: true
       }])
       .select()

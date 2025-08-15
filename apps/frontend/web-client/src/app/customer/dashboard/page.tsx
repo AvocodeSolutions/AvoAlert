@@ -384,34 +384,6 @@ export default function CustomerDashboard() {
         </div>
       )}
 
-      {/* Popular Coins Grid */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Popüler Coinler</CardTitle>
-          <CardDescription>
-            En çok takip edilen kripto paralar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {coins.slice(0, 12).map((coin) => (
-              <div
-                key={`coin-${coin.id}`}
-                className="p-4 border rounded-lg text-center hover:bg-muted/50 cursor-pointer"
-                onClick={() => setSelectedCoin(coin.symbol)}
-              >
-                <div className="font-semibold">{coin.symbol}</div>
-                <div className="text-sm text-muted-foreground">
-                  {coin.display_name || coin.symbol}
-                </div>
-                <Badge variant="outline" className="mt-2">
-                  {coin.exchange}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

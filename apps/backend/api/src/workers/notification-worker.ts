@@ -113,6 +113,18 @@ async function runNotificationWorker() {
           await redis.lpush('admin:notifications', JSON.stringify(notification))
           await redis.ltrim('admin:notifications', 0, 199)
 
+          // Deactivate the alarm after triggering
+          const { error: deactivateError } = await supabaseAdmin
+            .from('user_alarms')
+            .update({ is_active: false })
+            .eq('id', alarm.id)
+
+          if (deactivateError) {
+            console.error(`[notification-worker] Error deactivating alarm ${alarm.id}:`, deactivateError)
+          } else {
+            console.log(`[notification-worker] ✅ Alarm ${alarm.id} deactivated after triggering`)
+          }
+
           console.log(`[notification-worker] Processed alarm for ${alarm.email}`)
         } catch (err) {
           console.error(`[notification-worker] Error processing alarm for ${alarm.email}:`, err)
