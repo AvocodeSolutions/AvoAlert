@@ -13,7 +13,8 @@ async function testEmail() {
       coinSymbol: 'BTCUSDT',
       action: 'buy',
       timeframe: '4h',
-      triggeredAt: new Date().toISOString()
+      signalTime: '2025-08-15T18:00:00.000Z', // Simulated signal time
+      notificationTime: new Date().toISOString() // Current time as notification time
     })
 
     if (result.success) {

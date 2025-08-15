@@ -70,7 +70,8 @@ async function runNotificationWorker() {
             coinSymbol: signal.symbol,
             action: signal.action as 'buy' | 'sell',
             timeframe: signal.timeframe,
-            triggeredAt: signal.timestamp
+            signalTime: signal.timestamp,
+            notificationTime: new Date().toISOString()
           })
 
           if (emailResult.success) {

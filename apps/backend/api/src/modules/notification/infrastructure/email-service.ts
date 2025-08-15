@@ -6,7 +6,8 @@ export interface EmailService {
     coinSymbol: string
     action: 'buy' | 'sell'
     timeframe: string
-    triggeredAt: string
+    signalTime: string        // TradingView sinyal zamanı
+    notificationTime?: string // Gerçek bildirim zamanı (opsiyonel, yoksa şu an kullanılır)
   }): Promise<{ success: boolean; messageId?: string; error?: string }>
 }
 
@@ -22,13 +23,17 @@ export class ResendEmailService implements EmailService {
     coinSymbol: string
     action: 'buy' | 'sell'
     timeframe: string
-    triggeredAt: string
+    signalTime: string        // TradingView sinyal zamanı
+    notificationTime?: string // Gerçek bildirim zamanı
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
-      const { email, coinSymbol, action, timeframe, triggeredAt } = params
+      const { email, coinSymbol, action, timeframe, signalTime, notificationTime } = params
       
-      // Format date
-      const formattedDate = new Date(triggeredAt).toLocaleString('tr-TR', {
+      // Use notification time if provided, otherwise current time
+      const actualNotificationTime = notificationTime || new Date().toISOString()
+      
+      // Format both dates
+      const formatOptions: Intl.DateTimeFormatOptions = {
         timeZone: 'Europe/Istanbul',
         year: 'numeric',
         month: '2-digit',
@@ -36,7 +41,10 @@ export class ResendEmailService implements EmailService {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
-      })
+      }
+      
+      const formattedSignalTime = new Date(signalTime).toLocaleString('tr-TR', formatOptions)
+      const formattedNotificationTime = new Date(actualNotificationTime).toLocaleString('tr-TR', formatOptions)
 
       const actionText = action === 'buy' ? 'ALIM' : 'SATIŞ'
       const actionColor = action === 'buy' ? '#22c55e' : '#ef4444'
@@ -49,14 +57,19 @@ export class ResendEmailService implements EmailService {
         action: actionText,
         actionColor,
         timeframe,
-        triggeredAt: formattedDate,
+        signalTime: formattedSignalTime,
+        notificationTime: formattedNotificationTime,
         emoji
       })
 
+      // Get recipient email from environment or use provided email
+      const recipientEmail = process.env.EMAIL_FALLBACK_RECIPIENT || email
+      const isUsingFallback = recipientEmail !== email
+      
       const result = await this.resend.emails.send({
         from: 'AvoAlert <onboarding@resend.dev>', // Default Resend domain
-        to: ['avocodesolutions@gmail.com'], // Resend sadece bu email'e gönderebiliyor (domain doğrulaması yapılana kadar)
-        subject: `[${email}] ${subject}`, // Asıl alıcıyı subject'e yazıyoruz
+        to: [recipientEmail],
+        subject: isUsingFallback ? `[${email}] ${subject}` : subject, // Prefix with original email if using fallback
         html: htmlContent,
       })
 
@@ -68,7 +81,11 @@ export class ResendEmailService implements EmailService {
         }
       }
 
-      console.log(`[EmailService] Email sent successfully to ${email}, ID: ${result.data?.id}`)
+      if (isUsingFallback) {
+        console.log(`[EmailService] Email sent to fallback recipient ${recipientEmail} (intended for ${email}), ID: ${result.data?.id}`)
+      } else {
+        console.log(`[EmailService] Email sent successfully to ${email}, ID: ${result.data?.id}`)
+      }
       return { 
         success: true, 
         messageId: result.data?.id 
@@ -88,10 +105,11 @@ export class ResendEmailService implements EmailService {
     action: string
     actionColor: string
     timeframe: string
-    triggeredAt: string
+    signalTime: string
+    notificationTime: string
     emoji: string
   }): string {
-    const { coinSymbol, action, actionColor, timeframe, triggeredAt, emoji } = params
+    const { coinSymbol, action, actionColor, timeframe, signalTime, notificationTime, emoji } = params
 
     return `
 <!DOCTYPE html>
@@ -141,9 +159,13 @@ export class ResendEmailService implements EmailService {
                         <span style="color: #666; font-size: 14px;">Zaman Dilimi:</span>
                         <span style="color: #333; font-weight: bold; margin-left: 10px;">${timeframe}</span>
                     </div>
+                    <div style="margin-bottom: 10px;">
+                        <span style="color: #666; font-size: 14px;">Sinyal Zamanı:</span>
+                        <span style="color: #333; font-weight: bold; margin-left: 10px;">${signalTime}</span>
+                    </div>
                     <div>
-                        <span style="color: #666; font-size: 14px;">Tetiklenme Zamanı:</span>
-                        <span style="color: #333; font-weight: bold; margin-left: 10px;">${triggeredAt}</span>
+                        <span style="color: #666; font-size: 14px;">Bildirim Zamanı:</span>
+                        <span style="color: #333; font-weight: bold; margin-left: 10px;">${notificationTime}</span>
                     </div>
                 </div>
             </div>
@@ -184,6 +206,9 @@ export class ResendEmailService implements EmailService {
 
 // Factory function for easy instantiation
 export function createEmailService(): EmailService {
-  const apiKey = process.env.RESEND_API_KEY || "re_iiH2yXuj_DfqeNo6uie6wmGX411VxRtmi"
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY environment variable is required')
+  }
   return new ResendEmailService(apiKey)
 }

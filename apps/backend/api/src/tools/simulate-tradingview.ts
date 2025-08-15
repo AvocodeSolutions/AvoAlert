@@ -99,8 +99,6 @@ async function postWithRetry(url: string, body: unknown, retries = 10, delayMs =
 
 async function main() {
   const args = parseArgs()
-  console.log('🐛 [DEBUG] Parsed args:', args)
-  console.log('🐛 [DEBUG] Raw argv:', process.argv)
   const secret = process.env.TRADINGVIEW_WEBHOOK_SECRET
   if (!secret) {
     throw new Error('TRADINGVIEW_WEBHOOK_SECRET is not set in environment')
