@@ -2,11 +2,14 @@ import { loadEnv } from '../shared/load-env'
 loadEnv()
 import { redis } from '../infrastructure/queue/upstash'
 import { createClient } from '@supabase/supabase-js'
+import { createEmailService } from '../modules/notification/infrastructure/email-service'
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
+
+const emailService = createEmailService()
 
 interface Signal {
   symbol: string
@@ -59,8 +62,22 @@ async function runNotificationWorker() {
       // Process each user alarm
       for (const alarm of userAlarms) {
         try {
-          // TODO: Send actual email here (Resend/SendGrid integration)
-          console.log(`[notification-worker] Would send email to ${alarm.email} for ${signal.symbol} ${signal.action}`)
+          // Send actual email using Resend
+          console.log(`[notification-worker] Sending email to ${alarm.email} for ${signal.symbol} ${signal.action}`)
+          
+          const emailResult = await emailService.sendAlarmTriggeredEmail({
+            email: alarm.email,
+            coinSymbol: signal.symbol,
+            action: signal.action as 'buy' | 'sell',
+            timeframe: signal.timeframe,
+            triggeredAt: signal.timestamp
+          })
+
+          if (emailResult.success) {
+            console.log(`[notification-worker] ✅ Email sent successfully to ${alarm.email}, Message ID: ${emailResult.messageId}`)
+          } else {
+            console.error(`[notification-worker] ❌ Failed to send email to ${alarm.email}:`, emailResult.error)
+          }
 
           // Create triggered alarm record
           const triggeredAlarm = {
@@ -87,7 +104,9 @@ async function runNotificationWorker() {
             symbol: signal.symbol,
             timeframe: signal.timeframe,
             action: signal.action,
-            status: 'sent' // TODO: Change to 'pending' when real email integration
+            status: emailResult.success ? 'sent' : 'failed',
+            messageId: emailResult.messageId,
+            errorMessage: emailResult.error
           }
 
           await redis.lpush('admin:notifications', JSON.stringify(notification))

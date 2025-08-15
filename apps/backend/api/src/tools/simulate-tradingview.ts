@@ -23,6 +23,13 @@ function parseArgs(): Args {
   }
 
   const argv = process.argv.slice(2)
+  
+  // Handle positional args: npm run simulate -- SYMBOL ACTION
+  if (argv.length >= 2 && !argv[0].startsWith('--')) {
+    defaults.symbol = argv[0]
+    defaults.action = argv[1] as Args['action']
+  }
+  
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i]
     const val = argv[i + 1]
@@ -92,6 +99,8 @@ async function postWithRetry(url: string, body: unknown, retries = 10, delayMs =
 
 async function main() {
   const args = parseArgs()
+  console.log('🐛 [DEBUG] Parsed args:', args)
+  console.log('🐛 [DEBUG] Raw argv:', process.argv)
   const secret = process.env.TRADINGVIEW_WEBHOOK_SECRET
   if (!secret) {
     throw new Error('TRADINGVIEW_WEBHOOK_SECRET is not set in environment')
