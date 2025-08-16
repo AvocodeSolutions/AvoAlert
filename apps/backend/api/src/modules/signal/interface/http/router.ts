@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { IngestSignalUseCase } from '../../application/usecases/ingest-signal'
-import { z } from 'zod'
+import { TradingViewWebhookSchema } from '../../../../shared/dto/signal.dto'
 import { redis } from '../../../../infrastructure/queue/upstash'
 import { enqueueSignal } from '../../application/usecases/enqueue-signal'
 
@@ -45,21 +45,7 @@ signalRouter.post('/tradingview', async (req, res) => {
   const raw = { ...(req.body || {}) }
   if (!raw.timestamp && raw.ts) raw.timestamp = raw.ts
 
-  const schema = z.object({
-    symbol: z.string().min(1),
-    timeframe: z.enum(['1m', '5m', '15m', '1h', '4h', '1d']),
-    action: z.enum(['buy', 'sell']),
-    // Accept ISO8601 string OR unix seconds/milliseconds (string or number)
-    timestamp: z.union([
-      z.string().datetime({ offset: true }),
-      z.number(),
-      z.string().regex(/^\d+$/),
-    ]),
-    secret: z.string().min(8),
-    source: z.string().optional(),
-  })
-
-  const parse = schema.safeParse(raw)
+  const parse = TradingViewWebhookSchema.safeParse(raw)
   if (!parse.success) {
     return res.status(400).json({ ok: false, error: 'validation_error', details: parse.error.issues })
   }

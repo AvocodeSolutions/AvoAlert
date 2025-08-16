@@ -2,16 +2,29 @@ import { Router } from 'express'
 import { createClient } from '@supabase/supabase-js'
 import { Redis } from '@upstash/redis'
 
-// Direct Redis client creation instead of import
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
+// Lazy clients - will be created when first accessed
+let redisClient: Redis | null = null
+let supabaseClient: any = null
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getRedis() {
+  if (!redisClient) {
+    redisClient = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  }
+  return redisClient
+}
+
+function getSupabase() {
+  if (!supabaseClient) {
+    supabaseClient = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return supabaseClient
+}
 
 export const notificationRouter = Router()
 
@@ -28,7 +41,7 @@ notificationRouter.get('/user-alarms', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'email_required' })
     }
     
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await getSupabase()
       .from('user_alarms')
       .select('*')
       .eq('email', email)
@@ -57,7 +70,7 @@ notificationRouter.post('/user-alarms', async (req, res) => {
     }
 
     // Check if alarm already exists with same coin + action
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await getSupabase()
       .from('user_alarms')
       .select('id')
       .eq('email', email)
@@ -75,7 +88,7 @@ notificationRouter.post('/user-alarms', async (req, res) => {
     }
 
     // Verify coin exists
-    const { data: coin } = await supabaseAdmin
+    const { data: coin } = await getSupabase()
       .from('coins')
       .select('symbol')
       .eq('symbol', coin_symbol)
@@ -91,7 +104,7 @@ notificationRouter.post('/user-alarms', async (req, res) => {
     }
 
     // Create alarm
-    const { data: alarm, error } = await supabaseAdmin
+    const { data: alarm, error } = await getSupabase()
       .from('user_alarms')
       .insert([{
         email,
@@ -118,7 +131,7 @@ notificationRouter.delete('/user-alarms/:id', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'id_required' })
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await getSupabase()
       .from('user_alarms')
       .update({ is_active: false })
       .eq('id', id)
@@ -139,7 +152,7 @@ notificationRouter.get('/triggered-alarms', async (req, res) => {
     }
 
     // Read triggered alarms from Redis
-    const items = await redis.lrange('triggered_alarms', 0, 99)
+    const items = await getRedis().lrange('triggered_alarms', 0, 99)
     const parsed = items
       .map((x) => {
         try { 

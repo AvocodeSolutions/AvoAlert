@@ -1,17 +1,33 @@
 import { createClient } from '@supabase/supabase-js'
-import { loadEnv } from '../../shared/load-env'
+// loadEnv() is called in src/app.ts entry point
 
-loadEnv()
+let supabaseInstance: any = null
 
-const SUPABASE_URL = process.env.SUPABASE_URL as string
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+function createSupabaseClient() {
+  if (supabaseInstance) {
+    return supabaseInstance
+  }
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Supabase env vars missing')
+  const SUPABASE_URL = process.env.SUPABASE_URL as string
+  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Supabase env vars missing')
+  }
+
+  supabaseInstance = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  
+  return supabaseInstance
 }
 
-export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
+// Lazy getter for supabaseAdmin
+export const supabaseAdmin = new Proxy({} as any, {
+  get(target, prop) {
+    const client = createSupabaseClient()
+    return client[prop]
+  }
 })
 
 

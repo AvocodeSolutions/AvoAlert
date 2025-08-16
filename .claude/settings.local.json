@@ -10,7 +10,8 @@
       "Bash(git push:*)",
       "Bash(rm:*)",
       "Bash(curl:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

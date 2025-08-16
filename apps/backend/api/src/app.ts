@@ -6,11 +6,22 @@ import { signalRouter } from './modules/signal'
 import { notificationRouter } from './modules/notification'
 import { billingRouter } from './modules/billing'
 import { adminRouter } from './modules/admin'
+import { CustomerRouter } from './modules/customer'
 
 const app = express()
 const PORT = process.env.PORT || 4000
 
-app.use(cors({ origin: true, credentials: true }))
+// CORS configuration for production
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',  // Local development (Next.js default)
+    'http://localhost:3001',  // Local development (alternative port)
+    'https://avoalert.vercel.app',  // Production frontend
+    'https://avoalert-*.vercel.app'  // Vercel preview deployments
+  ],
+  credentials: true
+}
+app.use(cors(corsOptions))
 app.use(express.json())
 
 app.get('/health', (req, res) => {
@@ -21,6 +32,7 @@ app.use('/signals', signalRouter)
 app.use('/notifications', notificationRouter)
 app.use('/billing', billingRouter)
 app.use('/admin', adminRouter)
+app.use('/customer', CustomerRouter)
 
 app.get('/', (req, res) => {
   res.json({ message: 'AvoAlert API is running' })
