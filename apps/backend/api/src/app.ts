@@ -17,7 +17,10 @@ const corsOptions = {
     'http://localhost:3000',  // Local development (Next.js default)
     'http://localhost:3001',  // Local development (alternative port)
     'https://avoalert.vercel.app',  // Production frontend
-    'https://avoalert-*.vercel.app'  // Vercel preview deployments
+    'https://avoalert-*.vercel.app',  // Vercel preview deployments
+    'https://avoalert-app.onrender.com',  // Render static site
+    'https://avoalert.com',  // Custom domain
+    'https://www.avoalert.com'  // Custom domain with www
   ],
   credentials: true
 }
