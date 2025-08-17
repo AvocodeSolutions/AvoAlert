@@ -19,7 +19,6 @@ export default function AlertsPanel() {
   const [groups, setGroups] = useState<Group[]>([])
   const [tfs, setTfs] = useState<TFSet[]>([])
   const [assigns, setAssigns] = useState<Assign[]>([])
-  const [webhook, setWebhook] = useState<{ url: string; secret: string } | null>(null)
   const [presetEditId, setPresetEditId] = useState<string>("")
   const [presetScriptId, setPresetScriptId] = useState<string>("")
   const [indicators, setIndicators] = useState<Indicator[]>([])
@@ -54,12 +53,11 @@ export default function AlertsPanel() {
   const [expandedTFSetId, setExpandedTFSetId] = useState<string | null>(null)
 
   const loadAll = async () => {
-    const [p, g, t, a, w, i, c, tfm] = await Promise.all([
+    const [p, g, t, a, i, c, tfm] = await Promise.all([
       fetch(`${API_BASE}/admin/presets`).then(r => r.json()).catch(() => ({ items: [] })),
       fetch(`${API_BASE}/admin/groups`).then(r => r.json()).catch(() => ({ items: [] })),
       fetch(`${API_BASE}/admin/timeframes`).then(r => r.json()).catch(() => ({ items: [] })),
       fetch(`${API_BASE}/admin/assignments`).then(r => r.json()).catch(() => ({ items: [] })),
-      fetch(`${API_BASE}/admin/webhook`).then(r => r.json()).catch(() => ({ url: '', secret: '' })),
       fetch(`${API_BASE}/admin/indicators`).then(r => r.json()).catch(() => ({ items: [] })),
       fetch(`${API_BASE}/admin/coins`).then(r => r.json()).catch(() => ({ items: [] })),
       fetch(`${API_BASE}/admin/tf-master`).then(r => r.json()).catch(() => ({ items: [] })),
@@ -68,7 +66,6 @@ export default function AlertsPanel() {
     setGroups(g.items || [])
     setTfs(t.items || [])
     setAssigns(a.items || [])
-    setWebhook({ url: w.url || '', secret: w.secret || '' })
     setIndicators(i.items || [])
     setCoins(c.items || [])
     setTfMaster(tfm.items || [])
@@ -85,7 +82,7 @@ export default function AlertsPanel() {
 
   const buildPineScript = (preset: Preset) => {
     const pj = JSON.stringify(preset.params || {})
-    const sec = webhook?.secret || ""
+    const sec = process.env.TRADINGVIEW_WEBHOOK_SECRET || ""
     const secretDecl = `string sec = \"${sec}\"`
     const secretField = sec ? `,\\\"secret\\\":\\\"" + sec + "\\\"` : ``
     // Resolve indicator preference: explicit selection → preset.indicator key match → fallback
