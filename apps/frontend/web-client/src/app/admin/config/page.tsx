@@ -8,6 +8,23 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Settings, Cog, Target, TrendingUp, AlertCircle, Save, Plus, Edit3 } from 'lucide-react'
 
+// Simple coin logo mapping
+const getCoinLogo = (symbol: string): string => {
+  const coinMap: { [key: string]: string } = {
+    'BTCUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/btc.svg',
+    'ETHUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/eth.svg',
+    'AVAXUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/avax.svg',
+    'BNBUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/bnb.svg',
+    'ADAUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/ada.svg',
+    'SOLUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/sol.svg',
+    'XRPUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/xrp.svg',
+    'DOGEUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/doge.svg',
+    'MATICUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/matic.svg',
+    'LTCUSDT': 'https://rawcdn.githack.com/spothq/cryptocurrency-icons/master/svg/color/ltc.svg'
+  }
+  return coinMap[symbol] || ''
+}
+
 export default function ConfigPage() {
   const [configs, setConfigs] = useState([
     { id: '1', symbol: 'BTCUSDT', timeframe: '1h', keyValue: 2, atrPeriod: 18, active: true },
@@ -274,8 +291,22 @@ export default function ConfigPage() {
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                            {config.symbol.slice(0, 2)}
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-white border border-slate-200">
+                            {getCoinLogo(config.symbol) ? (
+                              <img 
+                                src={getCoinLogo(config.symbol)} 
+                                alt={config.symbol}
+                                className="w-6 h-6 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`${getCoinLogo(config.symbol) ? 'hidden' : ''} w-full h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
+                              {config.symbol.slice(0, 2)}
+                            </div>
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900 dark:text-white">{config.symbol}</div>

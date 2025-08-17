@@ -16,6 +16,7 @@ interface Coin {
   display_name: string | null
   exchange: string
   active: boolean
+  logo_url?: string
 }
 
 interface UserAlarm {
@@ -278,8 +279,22 @@ export default function CustomerDashboard() {
                     {coins.filter(coin => coin.active).map((coin) => (
                       <SelectItem key={coin.id} value={coin.symbol}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                            {coin.symbol.slice(0, 2)}
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-white border border-slate-200">
+                            {coin.logo_url ? (
+                              <img 
+                                src={coin.logo_url} 
+                                alt={coin.symbol}
+                                className="w-6 h-6 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  target.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`${coin.logo_url ? 'hidden' : ''} w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold`}>
+                              {coin.symbol.slice(0, 2)}
+                            </div>
                           </div>
                           <div>
                             <div className="font-semibold">{coin.symbol}</div>
@@ -397,8 +412,28 @@ export default function CustomerDashboard() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                              {alarm.coin_symbol.slice(0, 3)}
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-slate-200">
+                              {(() => {
+                                const coin = coins.find(c => c.symbol === alarm.coin_symbol);
+                                return coin?.logo_url ? (
+                                  <img 
+                                    src={coin.logo_url} 
+                                    alt={alarm.coin_symbol}
+                                    className="w-8 h-8 object-contain"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null;
+                              })()}
+                              <div className={`${(() => {
+                                const coin = coins.find(c => c.symbol === alarm.coin_symbol);
+                                return coin?.logo_url ? 'hidden' : '';
+                              })()} w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-sm`}>
+                                {alarm.coin_symbol.slice(0, 3)}
+                              </div>
                             </div>
                             <div className="space-y-1">
                               <div className="flex items-center gap-3">
@@ -480,8 +515,28 @@ export default function CustomerDashboard() {
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">
-                              {triggered.coin_symbol.slice(0, 3)}
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden bg-white border border-slate-200">
+                              {(() => {
+                                const coin = coins.find(c => c.symbol === triggered.coin_symbol);
+                                return coin?.logo_url ? (
+                                  <img 
+                                    src={coin.logo_url} 
+                                    alt={triggered.coin_symbol}
+                                    className="w-8 h-8 object-contain"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null;
+                              })()}
+                              <div className={`${(() => {
+                                const coin = coins.find(c => c.symbol === triggered.coin_symbol);
+                                return coin?.logo_url ? 'hidden' : '';
+                              })()} w-full h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center text-white font-bold text-sm`}>
+                                {triggered.coin_symbol.slice(0, 3)}
+                              </div>
                             </div>
                             <div className="space-y-1">
                               <div className="flex items-center gap-3">
