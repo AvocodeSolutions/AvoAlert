@@ -22,7 +22,6 @@ export const SignalIngestSchema = z.object({
   symbol: z.string().min(1),
   timeframe: z.string().min(1),
   action: z.enum(['buy', 'sell']),
-  price: z.number().positive(),
   timestamp: z.string()
 })
 

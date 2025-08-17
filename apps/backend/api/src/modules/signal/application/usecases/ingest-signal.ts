@@ -9,11 +9,11 @@ export class IngestSignalUseCase implements SignalIngestUseCase {
       throw new Error('Invalid signal payload')
     }
     
-    // Add default price if not provided
-    const price = body.price || 0
     return {
-      ...body,
-      price,
+      symbol: body.symbol,
+      timeframe: body.timeframe,
+      action: body.action,
+      timestamp: body.timestamp,
     } as TradingSignal
   }
 }
