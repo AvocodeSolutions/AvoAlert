@@ -1,8 +1,13 @@
 "use client"
 import { useEffect, useMemo, useState } from 'react'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, CardAction } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Settings, Code, Users, Target, TrendingUp, Activity, Plus, Edit3, Copy, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
 
@@ -238,27 +243,124 @@ if sell
   const tasklist = useMemo(() => assigns.filter(a => a.status !== 'paused').map(a => ({ symbol: a.symbol, timeframe: a.timeframe, presetId: a.preset_id, presetVersion: a.preset_version })), [assigns])
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Admin Panel</h1>
-        <Badge variant="outline" className="px-3 py-1">Aktif alert: {tasklist.length}</Badge>
-      </div>
-      {/* Sekmeler: Presets, Indicators, Pine Script, Groups */}
-      <div className="flex gap-2 text-sm">
-        <button className={`px-3 py-1 border rounded ${activeTab==='presets'?'bg-gray-900 text-white':'hover:bg-gray-50'}`} onClick={()=> setActiveTab('presets')}>Presets</button>
-        <button className={`px-3 py-1 border rounded ${activeTab==='indicators'?'bg-gray-900 text-white':'hover:bg-gray-50'}`} onClick={()=> setActiveTab('indicators')}>Indicators</button>
-        <button className={`px-3 py-1 border rounded ${activeTab==='script'?'bg-gray-900 text-white':'hover:bg-gray-50'}`} onClick={()=> setActiveTab('script' as any)}>Pine Script</button>
-        <button className={`px-3 py-1 border rounded ${activeTab==='groups'?'bg-gray-900 text-white':'hover:bg-gray-50'}`} onClick={()=> setActiveTab('groups' as any)}>Groups</button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      {/* Header */}
+      <div className="border-b bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-500 rounded-lg">
+                  <Settings className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Panel</h1>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Trading Alert Yönetimi</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="px-3 py-2 bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
+                <Activity className="h-4 w-4 mr-2" />
+                Aktif Alert: {tasklist.length}
+              </Badge>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Presets sekmesi */}
-      {activeTab === 'presets' && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Presets</CardTitle>
-            <CardDescription>Parametre setleri ve versiyonlar</CardDescription>
-          </CardHeader>
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm font-medium">Presets</p>
+                  <p className="text-3xl font-bold">{presets.length}</p>
+                </div>
+                <Target className="h-8 w-8 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm font-medium">Indicators</p>
+                  <p className="text-3xl font-bold">{indicators.length}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-green-200" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm font-medium">Groups</p>
+                  <p className="text-3xl font-bold">{groups.length}</p>
+                </div>
+                <Users className="h-8 w-8 text-purple-200" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm font-medium">Scripts</p>
+                  <p className="text-3xl font-bold">{generatedScript ? '1' : '0'}</p>
+                </div>
+                <Code className="h-8 w-8 text-orange-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Modern Tab Navigation */}
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-1">
+          <div className="flex gap-1">
+            {[
+              { key: 'presets', label: 'Presets', icon: Target },
+              { key: 'indicators', label: 'Indicators', icon: TrendingUp },
+              { key: 'script', label: 'Pine Script', icon: Code },
+              { key: 'groups', label: 'Groups', icon: Users }
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg transition-all duration-200 font-medium ${
+                  activeTab === key
+                    ? 'bg-blue-500 text-white shadow-lg'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+                onClick={() => setActiveTab(key as any)}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Presets sekmesi */}
+        {activeTab === 'presets' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Presets</CardTitle>
+                  <CardDescription className="text-sm">Parametre setleri ve versiyonlar</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
           <CardContent className="space-y-2">
           {/* Preset seçimi (düzenleme için yükle) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm items-end">
@@ -359,12 +461,19 @@ if sell
           </div>
           </CardContent>
         </Card>
-        {/* Preset listesi */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Preset Listesi</CardTitle>
-            <CardDescription>Mevcut preset kayıtları</CardDescription>
-          </CardHeader>
+          {/* Preset listesi */}
+          <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl">Preset Listesi</CardTitle>
+                  <CardDescription className="text-sm">Mevcut preset kayıtları</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
           <CardContent>
             <div className="text-xs text-gray-600 mb-2">Toplam: {presets.length}</div>
             <div className="text-xs bg-gray-50 p-3 rounded max-h-72 overflow-auto">
@@ -628,6 +737,7 @@ if sell
         </Card>
       </div>
       )}
+      </div>
     </div>
   )
 }

@@ -25,8 +25,9 @@ Write-Host "All services started!" -ForegroundColor Green
 Write-Host ""
 Write-Host "URLs:" -ForegroundColor Cyan
 Write-Host "  Frontend: http://localhost:3000" -ForegroundColor White
-Write-Host "  Customer: http://localhost:3000/customer/dashboard" -ForegroundColor White
-Write-Host "  Backend:  http://localhost:4000" -ForegroundColor White
+Write-Host "  Customer Dashboard: http://localhost:3000/customer/dashboard" -ForegroundColor Green
+Write-Host "  Admin Panel: http://localhost:3000/admin" -ForegroundColor Yellow
+Write-Host "  Backend API: http://localhost:4000" -ForegroundColor White
 Write-Host ""
 Write-Host "Test: cd apps\backend\api; npm run simulate -- --symbol CRV --action buy" -ForegroundColor White
 Write-Host ""
