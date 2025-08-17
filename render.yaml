@@ -6,7 +6,7 @@ services:
     env: node
     region: frankfurt
     plan: starter
-    buildCommand: npm install && npm run build:api
+    buildCommand: npm install --include=dev && npm run build:api
     startCommand: npm run start --workspace @avoalert/api
     rootDir: .
     envVars:
@@ -33,7 +33,7 @@ services:
     runtime: node
     env: node
     region: frankfurt
-    buildCommand: npm install && npm run build --workspace @avoalert/web-client
+    buildCommand: npm install --include=dev && npm run build --workspace @avoalert/web-client
     staticPublishPath: apps/frontend/web-client/out
     rootDir: .
     envVars:
