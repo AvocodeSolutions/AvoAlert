@@ -353,7 +353,7 @@ export default function CustomerDashboard() {
                 <div>
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Bilgilendirme</p>
                   <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                    Seçtiğiniz coin için belirlediğiniz sinyal tipinde (BUY/SELL) TradingView'dan sinyal geldiğinde email bildirim alacaksınız.
+                    Seçtiğiniz coin için belirlediğiniz sinyal tipinde (BUY/SELL) TradingView&apos;dan sinyal geldiğinde email bildirim alacaksınız.
                   </p>
                 </div>
               </div>

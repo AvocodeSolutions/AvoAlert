@@ -1,10 +1,3 @@
-import { Metadata } from 'next'
-
-export const metadata: Metadata = {
-  title: 'UT Bot Configuration - AvoAlert Admin',
-  description: 'Configure UT Bot parameters for different coin-timeframe combinations',
-}
-
 'use client'
 
 import { useState } from 'react'
