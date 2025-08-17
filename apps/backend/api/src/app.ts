@@ -60,7 +60,29 @@ app.get('/panel', async (req, res) => {
   }
 })
 
+// Start workers if enabled (for free tier deployment)
+if (process.env.START_WORKERS === 'true') {
+  console.log('Starting integrated workers...')
+  
+  // Import and start signal worker
+  import('./workers/signal-consumer').then(module => {
+    console.log('Signal worker started')
+  }).catch(err => {
+    console.error('Failed to start signal worker:', err)
+  })
+  
+  // Import and start notification worker
+  import('./workers/notification-worker').then(module => {
+    console.log('Notification worker started')
+  }).catch(err => {
+    console.error('Failed to start notification worker:', err)
+  })
+}
+
 app.listen(PORT, () => {
   console.log(`AvoAlert API running on port ${PORT}`)
+  if (process.env.START_WORKERS === 'true') {
+    console.log('Workers are integrated into this process')
+  }
 })
 
