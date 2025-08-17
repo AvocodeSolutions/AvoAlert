@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AvoAlert",
-  description: "Real-time crypto trading signals and alerts platform",
+  title: "AvoAlert - Crypto Trading Signals",
+  description: "Real-time crypto trading signals and alerts platform powered by TradingView",
 };
 
 export default function RootLayout({
