@@ -348,25 +348,30 @@ if sell
 
         {/* Presets sekmesi */}
         {activeTab === 'presets' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+                  <Target className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Presets</CardTitle>
-                  <CardDescription className="text-sm">Parametre setleri ve versiyonlar</CardDescription>
+                  <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Preset Management</CardTitle>
+                  <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Parametre setleri ve versiyonlar</CardDescription>
                 </div>
               </div>
             </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="p-6 space-y-6">
           {/* Preset seçimi (düzenleme için yükle) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm items-end">
-            <div className="col-span-2">
-              <label className="text-xs text-gray-600">Mevcut Preset Seç</label>
-              <select className="w-full border rounded px-2 py-1" value={presetEditId} onChange={e => {
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              Preset Selection
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Mevcut Preset Seç</label>
+                <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" value={presetEditId} onChange={e => {
                 const id = e.target.value
                 setPresetEditId(id)
                 const p = presets.find(pp => pp.id === id)
@@ -383,20 +388,24 @@ if sell
                 {presets.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
               </select>
             </div>
-            <div className="col-span-1 flex items-end justify-between text-xs text-gray-600">
-              <Badge variant="secondary">{presets.length}</Badge>
-              <Button variant="outline" size="sm" onClick={()=>{ setPresetEditModeNew(true); setPresetEditId(''); setNewPreset({ name:'', version:1, paramsText:'', active:true }); setPresetParamRows([]); setNewPresetIndicatorId('') }}>Yeni</Button>
+              <div className="col-span-1 flex items-end justify-between">
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">{presets.length}</Badge>
+                <Button variant="outline" size="sm" className="border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950" onClick={()=>{ setPresetEditModeNew(true); setPresetEditId(''); setNewPreset({ name:'', version:1, paramsText:'', active:true }); setPresetParamRows([]); setNewPresetIndicatorId('') }}>+ Yeni</Button>
+              </div>
             </div>
           </div>
-          <div>
-            <h3 className="font-medium text-sm mb-2">Preset Oluştur / Güncelle</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <input className="border rounded px-2 py-1" placeholder="Name (örn. UTB_A)" value={newPreset.name} onChange={e=>setNewPreset({...newPreset,name:e.target.value})} disabled={!canEditPreset} />
-              <input className="border rounded px-2 py-1" type="number" placeholder="Version" value={newPreset.version} onChange={e=>setNewPreset({...newPreset,version: Number(e.target.value)||1})} disabled={!canEditPreset} />
-              <div className="col-span-2 grid grid-cols-2 gap-2 items-end">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              Preset Oluştur / Güncelle
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="Name (örn. UTB_A)" value={newPreset.name} onChange={e=>setNewPreset({...newPreset,name:e.target.value})} disabled={!canEditPreset} />
+              <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" type="number" placeholder="Version" value={newPreset.version} onChange={e=>setNewPreset({...newPreset,version: Number(e.target.value)||1})} disabled={!canEditPreset} />
+              <div className="col-span-2 grid grid-cols-2 gap-4 items-end">
                 <div>
-                  <label className="text-xs text-gray-600">Indicator</label>
-                  <select className="w-full border rounded px-2 py-1" disabled={!canEditPreset} value={newPresetIndicatorId} onChange={e=> {
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Indicator</label>
+                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" disabled={!canEditPreset} value={newPresetIndicatorId} onChange={e=> {
                     const id = e.target.value
                     setNewPresetIndicatorId(id)
                     const ind = indicators.find(d=> d.id === id)
@@ -408,32 +417,35 @@ if sell
                     {indicators.map(d => <option key={d.id} value={d.id}>{d.name} ({d.key})</option>)}
                   </select>
                 </div>
-                <div className="text-xs text-gray-500 text-right">Coin seçimi gerekmez; TradingView grafiğinde hangi sembol ve timeframe açıksa o kullanılır.</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">💡 Coin seçimi gerekmez; TradingView grafiğinde hangi sembol ve timeframe açıksa o kullanılır.</div>
               </div>
               {/* Preset Params (indicator'a göre) */}
               <div className="col-span-2">
-                <div className="mb-2 text-xs text-gray-600">Params (indicator’a göre)</div>
-                <div className="space-y-2">
+                <div className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  Params (indicator&apos;a göre)
+                </div>
+                <div className="space-y-3">
                   {presetParamRows.map((p,idx)=> (
-                    <div key={idx} className="grid grid-cols-3 gap-2">
-                      <input className="border rounded px-2 py-1 bg-gray-100 text-gray-600" placeholder="name" value={p.k} disabled title="Param anahtarı indikatörden gelir." />
-                      <select className="border rounded px-2 py-1 bg-gray-100 text-gray-600" value={p.t} onChange={()=>{}} disabled title="Parametre tipi indikatörden gelir. Değiştirmek için Indicators kartını kullanın.">
+                    <div key={idx} className="grid grid-cols-3 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400" placeholder="name" value={p.k} disabled title="Param anahtarı indikatörden gelir." />
+                      <select className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400" value={p.t} onChange={()=>{}} disabled title="Parametre tipi indikatörden gelir. Değiştirmek için Indicators kartını kullanın.">
                         <option value="number">number</option>
                         <option value="boolean">boolean</option>
                       </select>
                       {p.t === 'boolean' ? (
-                        <select className="border rounded px-2 py-1" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }}>
+                        <select className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }}>
                           <option value="true">true</option>
                           <option value="false">false</option>
                         </select>
                       ) : (
-                        <input className="border rounded px-2 py-1" placeholder="value" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }} />
+                        <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" placeholder="value" value={p.v} onChange={e=>{ const arr=[...presetParamRows]; arr[idx]={...arr[idx],v:e.target.value}; setPresetParamRows(arr) }} />
                       )}
                     </div>
                   ))}
                 </div>
               </div>
-              <Button className="col-span-2" disabled={loading || !canEditPreset}
+              <Button className="col-span-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" disabled={loading || !canEditPreset}
                 onClick={async ()=>{
                   try{
                     setLoading(true)
@@ -462,30 +474,38 @@ if sell
           </CardContent>
         </Card>
           {/* Preset listesi */}
-          <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
+          <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                  <Target className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Preset Listesi</CardTitle>
-                  <CardDescription className="text-sm">Mevcut preset kayıtları</CardDescription>
+                  <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Preset Directory</CardTitle>
+                  <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Mevcut preset kayıtları</CardDescription>
                 </div>
               </div>
             </CardHeader>
-          <CardContent>
-            <div className="text-xs text-gray-600 mb-2">Toplam: {presets.length}</div>
-            <div className="text-xs bg-gray-50 p-3 rounded max-h-72 overflow-auto">
-              <ul className="space-y-1">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Toplam Presets</span>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">{presets.length}</Badge>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-h-80 overflow-auto">
+              <ul className="space-y-2">
                 {presets.map((p)=> (
-                  <li key={p.id} className="flex justify-between gap-2">
-                    <span className="font-mono">{p.name}</span>
-                    <span className="text-gray-600">v{p.version}</span>
-                    <span className="text-gray-500">{p.indicator}</span>
+                  <li key={p.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="font-mono text-slate-900 dark:text-white font-medium">{p.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">v{p.version}</Badge>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{p.indicator}</span>
+                    </div>
                   </li>
                 ))}
-                {presets.length===0 && <li className="text-gray-500">Kayıt yok.</li>}
+                {presets.length===0 && <li className="text-slate-500 dark:text-slate-400 text-center py-8">Kayıt yok.</li>}
               </ul>
             </div>
           </CardContent>
@@ -495,50 +515,76 @@ if sell
 
       {/* Pine Script sekmesi */}
       {activeTab === 'script' && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pine Script Oluşturma</CardTitle>
-            <CardDescription>Preset seç → script üret (indikator, preset’ten çözülür)</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg">
+                <Code className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Pine Script Generator</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Preset seç → script üret (indikator, preset&apos;ten çözülür)</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm items-end">
-              <div className="col-span-2">
-                <label className="text-xs text-gray-600">Preset</label>
-                <select className="w-full border rounded px-2 py-1" value={presetScriptId} onChange={e => setPresetScriptId(e.target.value)}>
+          <CardContent className="p-6 space-y-6">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                Script Configuration
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Preset</label>
+                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all" value={presetScriptId} onChange={e => setPresetScriptId(e.target.value)}>
                   <option value="">Lütfen Seçin</option>
                   {presets.map(p => <option key={p.id} value={p.id}>{p.name} v{p.version}</option>)}
                 </select>
                 {selectedPreset && (
-                  <div className="mt-1 text-xs text-gray-500">Bağlı indikatör: {(indicators.find(d=> d.key === selectedPreset.indicator)?.name) || selectedPreset.indicator}</div>
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <span className="text-xs text-blue-700 dark:text-blue-300">Bağlı indikatör: {(indicators.find(d=> d.key === selectedPreset.indicator)?.name) || selectedPreset.indicator}</span>
+                  </div>
                 )}
-              </div>
-              <div className="col-span-1 flex items-end md:pt-6">
-                <Button className="w-full h-10" disabled={!selectedPreset}
+                </div>
+                <div className="col-span-1 flex items-end">
+                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" disabled={!selectedPreset}
                   onClick={()=>{
                     if(!selectedPreset){ alert('Önce bir preset seç'); return }
                     const s = buildPineScript(selectedPreset)
                     setGeneratedScript(s)
-                  }}>Pine Script Üret</Button>
+                  }}>🚀 Script Üret</Button>
+                </div>
               </div>
             </div>
-            <div className="text-xs text-gray-500">Not: Coin seçimi gerekmez. Script, TradingView’da açık olan sembol ve timeframe ile çalışır.</div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <span className="text-xs text-amber-700 dark:text-amber-300">💡 Not: Coin seçimi gerekmez. Script, TradingView&apos;da açık olan sembol ve timeframe ile çalışır.</span>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Kopyala</CardTitle>
-            <CardDescription>TradingView Pine Editor’a yapıştır</CardDescription>
+        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/50 dark:to-red-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
+                <Copy className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Script Output</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">TradingView Pine Editor&apos;a yapıştır</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex gap-2 text-sm">
-              <Button variant="outline" onClick={async()=>{
+          <CardContent className="p-6 space-y-6">
+            <div className="flex gap-3">
+              <Button variant="outline" className="border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-950" onClick={async()=>{
                 if(!generatedScript){ alert('Preset seçip \"Pine Script Üret\"e tıkla'); return }
                 try{ await navigator.clipboard.writeText(generatedScript); alert('Script kopyalandı') } catch{ alert('Kopyalanamadı') }
-              }}>Kopyala</Button>
-              <Button variant="outline" onClick={()=> setGeneratedScript('') }>Temizle</Button>
+              }}>📋 Kopyala</Button>
+              <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950" onClick={()=> setGeneratedScript('') }>🗑️ Temizle</Button>
             </div>
-            <pre className="text-xs bg-gray-50 p-3 rounded overflow-auto max-h-72">{generatedScript || '// Preset seç ve "Pine Script Üret" butonuna tıkla'}</pre>
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <pre className="text-xs p-4 overflow-auto max-h-80 font-mono text-slate-700 dark:text-slate-300">{generatedScript || '// Preset seç ve "Pine Script Üret" butonuna tıkla'}</pre>
+            </div>
           </CardContent>
         </Card>
       </div>
