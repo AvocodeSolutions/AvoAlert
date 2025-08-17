@@ -52,7 +52,7 @@ export default function CustomerDashboard() {
   // Fetch coins from backend API
   const fetchCoins = async () => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
       const response = await fetch(`${API_BASE}/admin/coins`)
       if (response.ok) {
         const data = await response.json()
@@ -71,7 +71,7 @@ export default function CustomerDashboard() {
   const fetchAlarms = async () => {
     if (!email) return
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
       const response = await fetch(`${API_BASE}/notifications/user-alarms?email=${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()
@@ -92,7 +92,7 @@ export default function CustomerDashboard() {
 
     setLoading(true)
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
       const response = await fetch(`${API_BASE}/notifications/user-alarms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,7 +123,7 @@ export default function CustomerDashboard() {
   // Delete alarm
   const deleteAlarm = async (alarmId: string) => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
       const response = await fetch(`${API_BASE}/notifications/user-alarms/${alarmId}`, {
         method: 'DELETE'
       })
@@ -144,7 +144,7 @@ export default function CustomerDashboard() {
   const fetchTriggeredAlarms = async () => {
     if (!email) return
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
       const response = await fetch(`${API_BASE}/notifications/triggered-alarms?email=${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()

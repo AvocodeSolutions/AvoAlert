@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
 
 type Preset = { id: string; name: string; indicator: string; version: number; params: any; active: boolean }
 type Indicator = { id: string; name: string; key: string; pine_template?: string; default_params?: any; active?: boolean }

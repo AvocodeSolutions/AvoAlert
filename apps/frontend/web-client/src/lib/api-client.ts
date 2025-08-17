@@ -1,5 +1,5 @@
 // Backend API client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
 
 interface ApiResponse<T = any> {
   ok: boolean

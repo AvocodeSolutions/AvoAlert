@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
 
 type QueueStats = { qSignal: number; processed: number; notifications: number; enqueued: number }
 type Processed = { processedAt: string; symbol: string; timeframe: string; action: 'buy' | 'sell' }
