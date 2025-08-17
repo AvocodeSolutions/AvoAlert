@@ -1,0 +1,86 @@
+services:
+  # Backend API Service (Internal)
+  - type: web
+    name: avoalert-api
+    runtime: node
+    env: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install && npm run build:api
+    startCommand: npm run start --workspace @avoalert/api
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: TRADINGVIEW_WEBHOOK_SECRET
+        sync: false
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  # Worker Service (Signal Consumer)
+  - type: worker
+    name: avoalert-signal-worker
+    runtime: node
+    env: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install && npm run build:api
+    startCommand: npm run worker:prod --workspace @avoalert/api
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  # Worker Service (Notification Consumer)
+  - type: worker
+    name: avoalert-notification-worker
+    runtime: node
+    env: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install && npm run build:api
+    startCommand: npm run notification-worker:prod --workspace @avoalert/api
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+
+  # Main Frontend Application (Your Custom Domain)
+  - type: web
+    name: avoalert-app
+    runtime: node
+    env: node
+    region: frankfurt
+    plan: starter
+    buildCommand: npm install && npm run build --workspace @avoalert/web-client
+    startCommand: npm run start --workspace @avoalert/web-client
+    rootDir: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_API_URL
+        value: https://avoalert-api.onrender.com
