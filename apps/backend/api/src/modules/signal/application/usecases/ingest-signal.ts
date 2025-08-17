@@ -9,10 +9,12 @@ export class IngestSignalUseCase implements SignalIngestUseCase {
       throw new Error('Invalid signal payload')
     }
     
+    const price = body.price || 0
     return {
       symbol: body.symbol,
       timeframe: body.timeframe,
       action: body.action,
+      price: price,
       timestamp: body.timestamp,
     } as TradingSignal
   }

@@ -50,7 +50,7 @@ signalRouter.post('/tradingview', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'validation_error', details: parse.error.issues })
   }
 
-  const { symbol, timeframe, action, timestamp, secret } = parse.data
+  const { symbol, timeframe, action, price, timestamp, secret } = parse.data
 
   function toIsoTimestamp(input: string | number): string {
     if (typeof input === 'number') {
@@ -104,6 +104,7 @@ signalRouter.post('/tradingview', async (req, res) => {
       symbol: normalizedSymbol,
       timeframe,
       action,
+      price,
       timestamp: timestampIso,
     })
     try {

@@ -5,7 +5,7 @@ export const TradingViewWebhookSchema = z.object({
   symbol: z.string().min(1),
   timeframe: z.enum(['1m', '5m', '15m', '1h', '4h', '1d']),
   action: z.enum(['buy', 'sell']),
-  price: z.number().positive().optional(),
+  price: z.number().positive(),
   timestamp: z.union([
     z.string().datetime({ offset: true }), 
     z.number(), 
@@ -22,6 +22,7 @@ export const SignalIngestSchema = z.object({
   symbol: z.string().min(1),
   timeframe: z.string().min(1),
   action: z.enum(['buy', 'sell']),
+  price: z.number().positive(),
   timestamp: z.string()
 })
 
