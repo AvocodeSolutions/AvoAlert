@@ -108,8 +108,10 @@ signalRouter.post('/tradingview', async (req, res) => {
     })
     try {
       await enqueueSignal(signal)
-    } catch (_err) {
-      void _err
+      console.log('Signal enqueued successfully:', signal)
+    } catch (err) {
+      console.error('Failed to enqueue signal:', err)
+      return res.status(500).json({ ok: false, error: 'enqueue_failed', details: err.message })
     }
     return res.status(201).json({
       ok: true,

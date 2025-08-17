@@ -66,20 +66,24 @@ app.get('/panel', async (req, res) => {
 // Start workers if enabled (for free tier deployment)
 if (process.env.START_WORKERS === 'true') {
   console.log('Starting integrated workers...')
+  console.log('Environment check - START_WORKERS:', process.env.START_WORKERS)
+  console.log('Environment check - UPSTASH_REDIS_URL exists:', !!process.env.UPSTASH_REDIS_URL)
   
   // Import and start signal worker
   import('./workers/signal-consumer').then(module => {
-    console.log('Signal worker started')
+    console.log('Signal worker started successfully')
   }).catch(err => {
     console.error('Failed to start signal worker:', err)
   })
   
   // Import and start notification worker
   import('./workers/notification-worker').then(module => {
-    console.log('Notification worker started')
+    console.log('Notification worker started successfully')
   }).catch(err => {
     console.error('Failed to start notification worker:', err)
   })
+} else {
+  console.log('Workers not enabled - START_WORKERS:', process.env.START_WORKERS)
 }
 
 app.listen(PORT, () => {
