@@ -899,6 +899,7 @@ const CustomerDashboard = memo(() => {
               </CardContent>
             </Card>
 
+
             {/* Triggered Alarms */}
             <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
