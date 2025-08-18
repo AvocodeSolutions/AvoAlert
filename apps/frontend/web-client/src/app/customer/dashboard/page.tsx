@@ -301,10 +301,14 @@ const CustomerDashboard = memo(() => {
     if (!email) return
     try {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      console.log('Fetching triggered alarms for email:', email)
       const response = await fetch(`${API_BASE}/notifications/triggered-alarms?email=${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()
+        console.log('Triggered alarms API response:', data)
         setTriggeredAlarms(data.triggered || [])
+      } else {
+        console.error('Triggered alarms API error:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching triggered alarms:', error)
