@@ -92,9 +92,9 @@ signalRouter.post('/tradingview', async (req, res) => {
         suggestion: 'Lütfen birkaç saniye bekleyip tekrar deneyin'
       })
     }
-  } catch {
-    // If Redis not available, we still accept but warn via response
-    void 0
+  } catch (redisError) {
+    // If Redis not available (limit exceeded), skip idempotency check
+    console.warn('⚠️  Redis idempotency check failed (continuing anyway):', redisError.message)
   }
 
   // Execute domain use case (currently validation/echo) and enqueue for async processing
