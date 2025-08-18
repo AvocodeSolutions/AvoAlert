@@ -21,6 +21,19 @@ export class BinanceDirectService implements FallbackPriceService {
     return price
   }
 
+  async isAvailable(): Promise<boolean> {
+    try {
+      // Test Binance API availability with a simple ping
+      const response = await fetch(`${this.baseUrl}/ping`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      })
+      return response.ok
+    } catch {
+      return false
+    }
+  }
+
   async getCurrentPrices(symbols: string[]): Promise<Map<string, PriceData>> {
     const prices = new Map<string, PriceData>()
 
@@ -28,13 +41,18 @@ export class BinanceDirectService implements FallbackPriceService {
       // Binance API: Get 24hr ticker statistics
       const url = `${this.baseUrl}/ticker/24hr`
       
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout)
+      
       const response = await fetch(url, {
         method: 'GET',
-        timeout: this.requestTimeout,
+        signal: controller.signal,
         headers: {
           'User-Agent': 'AvoAlert-Backend'
         }
       })
+      
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`Binance API HTTP ${response.status}: ${response.statusText}`)
@@ -61,7 +79,8 @@ export class BinanceDirectService implements FallbackPriceService {
             volume24h: parseFloat(ticker.volume),
             high24h: parseFloat(ticker.highPrice),
             low24h: parseFloat(ticker.lowPrice),
-            lastUpdate: new Date().toISOString()
+            lastUpdate: new Date(),
+            source: 'binance'
           }
           
           prices.set(ticker.symbol, priceData)
