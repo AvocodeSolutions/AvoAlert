@@ -319,6 +319,7 @@ const CustomerDashboard = memo(() => {
       if (response.ok) {
         toast.success('Alarm başarıyla oluşturuldu!')
         await fetchAlarms()
+        await fetchTriggeredAlarms() // Also refresh triggered alarms
         setSelectedCoin('')
         setSelectedAction('buy')
       } else {
@@ -337,7 +338,7 @@ const CustomerDashboard = memo(() => {
     } finally {
       setLoading(false)
     }
-  }, [email, selectedCoin, selectedAction])
+  }, [email, selectedCoin, selectedAction, fetchAlarms, fetchTriggeredAlarms])
 
   // Delete alarm - memoized
   const deleteAlarm = useCallback(async (alarmId: string) => {
@@ -350,13 +351,14 @@ const CustomerDashboard = memo(() => {
       if (response.ok) {
         toast.success('Alarm silindi!')
         await fetchAlarms()
+        await fetchTriggeredAlarms() // Also refresh triggered alarms
       } else {
         toast.error('Alarm silinemedi!')
       }
     } catch (error) {
       toast.error('Beklenmeyen hata!')
     }
-  }, [])
+  }, [fetchAlarms, fetchTriggeredAlarms])
 
   // Fetch triggered alarms - memoized
   const fetchTriggeredAlarms = useCallback(async () => {
@@ -466,16 +468,17 @@ const CustomerDashboard = memo(() => {
     }
   }, [failedLogos.size, coins])
 
-  // Auto-refresh triggered alarms every 30 seconds (extreme optimization)
+  // Auto-refresh alarms and triggered alarms every 5 seconds for real-time updates
   useEffect(() => {
     if (!email) return
     
     const interval = setInterval(() => {
       fetchTriggeredAlarms()
-    }, 30000)
+      fetchAlarms() // Also refresh active alarms to remove triggered ones
+    }, 5000)
 
     return () => clearInterval(interval)
-  }, [email])
+  }, [email, fetchTriggeredAlarms, fetchAlarms])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
