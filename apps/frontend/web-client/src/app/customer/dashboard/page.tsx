@@ -199,66 +199,74 @@ const CustomerDashboard = memo(() => {
   // Memoized active coins to prevent unnecessary re-renders
   const activeCoins = useMemo(() => coins.filter(coin => coin.active), [coins])
 
-  // Fetch real-time prices for active coins - memoized with debouncing
-  const fetchPrices = useCallback(async () => {
-    if (isUpdatingPrices) return // Prevent multiple simultaneous updates
-    setIsUpdatingPrices(true)
-    try {
-      let activeSymbols = activeCoins
-        .map(coin => coin.symbol)
-        .filter(symbol => symbol && symbol.trim()) // Remove empty symbols
-        .slice(0, 100) // Limit to exactly 100 coins for API validation
-      
-      // Double check length
-      if (activeSymbols.length > 100) {
-        activeSymbols = activeSymbols.slice(0, 100)
-      }
-      
-      console.log('Sending', activeSymbols.length, 'symbols to API') // Debug log
-      if (activeSymbols.length === 0) return
+  // WebSocket connection for real-time prices
+  const connectWebSocket = useCallback(() => {
+    if (activeCoins.length === 0) return
 
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${API_BASE}/prices/current`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbols: activeSymbols,
-          preferCache: true,
-          maxCacheAge: 300
-        })
-      })
+    const symbols = activeCoins
+      .map(coin => coin.symbol)
+      .filter(symbol => symbol && symbol.trim())
+      .slice(0, 100)
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.data.prices) {
-          setPrices(prevPrices => {
-            const newPrices = new Map(prevPrices) // Keep existing prices
-            Object.entries(data.data.prices).forEach(([symbol, priceData]: [string, any]) => {
-              newPrices.set(symbol, {
-                symbol,
-                price: priceData.p || priceData.price, // Handle both new and old API formats
-                change24h: priceData.c || priceData.change24h,
-                lastUpdate: priceData.u || priceData.lastUpdate
-              })
-            })
-            return newPrices
-          })
-        }
-      } else {
-        // Log error details for debugging
-        const errorText = await response.text()
-        console.warn('Prices API failed, generating mock data for development:', response.status, errorText)
-        
-        // Just log error, don't use mock data
-        console.error('Prices API failed:', response.status, errorText)
-        return
+    if (symbols.length === 0) return
+
+    console.log('🔌 Connecting WebSocket for', symbols.length, 'symbols')
+    
+    // Use Binance WebSocket directly
+    const wsUrl = 'wss://stream.binance.com:9443/ws'
+    const ws = new WebSocket(wsUrl)
+
+    ws.onopen = () => {
+      console.log('✅ WebSocket connected')
+      // Subscribe to ticker streams for all symbols
+      const streams = symbols.map(symbol => `${symbol.toLowerCase()}@ticker`)
+      const subscribeMessage = {
+        method: 'SUBSCRIBE',
+        params: streams,
+        id: 1
       }
-    } catch (error) {
-      // Don't clear prices on error, keep showing last successful data
-    } finally {
-      setIsUpdatingPrices(false)
+      ws.send(JSON.stringify(subscribeMessage))
     }
-  }, [activeCoins, isUpdatingPrices])
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.stream && data.data) {
+          const ticker = data.data
+          const symbol = ticker.s
+          
+          if (symbol) {
+            const priceData: PriceData = {
+              symbol,
+              price: parseFloat(ticker.c), // Current price
+              change24h: parseFloat(ticker.P), // 24h change percentage
+              lastUpdate: new Date().toISOString()
+            }
+
+            setPrices(prevPrices => {
+              const newPrices = new Map(prevPrices)
+              newPrices.set(symbol, priceData)
+              return newPrices
+            })
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error)
+      }
+    }
+
+    ws.onerror = (error) => {
+      console.error('❌ WebSocket error:', error)
+    }
+
+    ws.onclose = () => {
+      console.log('🔌 WebSocket closed')
+      // Reconnect after 5 seconds
+      setTimeout(connectWebSocket, 5000)
+    }
+
+    return ws
+  }, [activeCoins])
 
   // Fetch user alarms - memoized
   const fetchAlarms = useCallback(async () => {
@@ -400,16 +408,12 @@ const CustomerDashboard = memo(() => {
     })
   }, [failedLogos])
 
-  // FAST initial data load - immediate coins, parallel prices
+  // FAST initial data load - coins and WebSocket
   useEffect(() => {
-    console.log('🚀 FAST loading - coins first, then immediate prices')
+    console.log('🚀 FAST loading - coins first, then WebSocket connection')
     
     // Load coins immediately
-    fetchCoins().then(() => {
-      // As soon as coins load, fetch prices immediately (no delay)
-      console.log('⚡ Coins loaded, fetching prices immediately...')
-      fetchPrices()
-    })
+    fetchCoins()
 
     if (email) {
       fetchAlarms()
@@ -424,20 +428,18 @@ const CustomerDashboard = memo(() => {
     }
   }, [coins.length, preloadLogos])
 
-  // Set up price refresh interval only (initial fetch handled above)
+  // Connect WebSocket when coins are loaded
   useEffect(() => {
     if (activeCoins.length > 0) {
-      // Set up interval for auto-refresh
-      const priceInterval = setInterval(() => {
-        console.log('Auto-refreshing prices...')
-        fetchPrices()
-      }, 15000) // Every 15 seconds
+      const ws = connectWebSocket()
       
       return () => {
-        clearInterval(priceInterval)
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.close()
+        }
       }
     }
-  }, [activeCoins.length])
+  }, [activeCoins.length, connectWebSocket])
 
   // Report failed logos after load
   useEffect(() => {

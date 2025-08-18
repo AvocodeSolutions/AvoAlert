@@ -16,7 +16,8 @@ import { GetPriceHealthUseCase } from './application/usecases/get-price-health'
 // Infrastructure Layer
 import { BinanceStreamService } from './infrastructure/binance-stream-service'
 import { RedisPriceCacheRepository } from './infrastructure/redis-price-cache'
-import { CoinGeckoFallbackService } from './infrastructure/coingecko-fallback-service'
+// CoinGecko removed - using only Binance API now
+import { BinanceDirectService } from './infrastructure/binance-direct-service'
 import { DefaultSymbolMappingService } from './infrastructure/symbol-mapping-service'
 import { DefaultPriceHealthService } from './infrastructure/price-health-service'
 
@@ -83,7 +84,8 @@ export function createPricesModule(config: PricesModuleConfig): PricesModule {
   // Infrastructure Layer - Create services
   const symbolMappingService = new DefaultSymbolMappingService()
   const cacheRepository = new RedisPriceCacheRepository(redisClient)
-  const fallbackService = new CoinGeckoFallbackService(symbolMappingService)
+  // Use Binance Direct API only (no CoinGecko needed)
+  const fallbackService = new BinanceDirectService()
   const streamService = new BinanceStreamService()
   const healthService = new DefaultPriceHealthService()
   const eventPublisher = new SimplePriceEventPublisher()
@@ -120,14 +122,17 @@ export function createPricesModule(config: PricesModuleConfig): PricesModule {
   if (enableStream && defaultSymbols.length > 0) {
     setTimeout(async () => {
       try {
+        console.log('🚀 Starting Binance WebSocket stream for', defaultSymbols.length, 'symbols...')
         await startPriceStreamUseCase.execute({
           symbols: defaultSymbols,
           enableCaching: true,
           cacheTtl: 300
         })
+        console.log('✅ Binance WebSocket stream started successfully')
       } catch (error) {
+        console.error('❌ Failed to start price stream:', error)
       }
-    }, 5000) // Wait 5 seconds after startup
+    }, 2000) // Reduced to 2 seconds for faster startup
   }
 
   return {
@@ -176,7 +181,7 @@ export {
   GetPriceHealthUseCase,
   BinanceStreamService,
   RedisPriceCacheRepository,
-  CoinGeckoFallbackService,
+  BinanceDirectService,
   DefaultSymbolMappingService,
   DefaultPriceHealthService
 }

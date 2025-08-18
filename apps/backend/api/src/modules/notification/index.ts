@@ -151,9 +151,20 @@ notificationRouter.get('/triggered-alarms', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'email_required' })
     }
 
-    // Redis limit exceeded, just return empty for now  
-    console.warn('Redis limit exceeded, returning empty triggered alarms')
-    res.json({ ok: true, triggered: [] })
+    // Get triggered alarms from database
+    const { data: triggered, error } = await getSupabase()
+      .from('triggered_alarms')
+      .select('*')
+      .eq('email', email)
+      .order('triggered_at', { ascending: false })
+      .limit(50)
+
+    if (error) {
+      console.error('Failed to fetch triggered alarms:', error)
+      return res.status(500).json({ ok: false, error: error.message })
+    }
+
+    res.json({ ok: true, triggered: triggered || [] })
   } catch (e) {
     return res.status(500).json({ ok: false, error: (e as Error).message })
   }

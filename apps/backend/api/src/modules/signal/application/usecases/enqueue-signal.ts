@@ -52,14 +52,12 @@ async function processSignalDirectly(payload: EnqueueSignalPayload) {
       return
     }
 
-    // Simulate triggered alarms (without Redis)
+    // Process triggered alarms and save to database
     for (const alarm of alarms) {
       console.log(`🚨 ALARM TRIGGERED: ${alarm.email} - ${payload.symbol} ${payload.action}`)
       
-      // Here you would normally send notification
-      // For now just log it
+      // Save triggered alarm to database
       const triggeredData = {
-        id: `direct-${Date.now()}`,
         email: alarm.email,
         coin_symbol: payload.symbol,
         action: payload.action,
@@ -68,7 +66,16 @@ async function processSignalDirectly(payload: EnqueueSignalPayload) {
         message: `${payload.symbol} ${payload.action} signal triggered`
       }
       
-      console.log('📧 Would send notification:', triggeredData)
+      // Insert into triggered_alarms table
+      const { error: insertError } = await supabaseAdmin
+        .from('triggered_alarms')
+        .insert([triggeredData])
+      
+      if (insertError) {
+        console.error('Failed to save triggered alarm:', insertError)
+      } else {
+        console.log('✅ Triggered alarm saved:', triggeredData)
+      }
     }
     
   } catch (err) {
