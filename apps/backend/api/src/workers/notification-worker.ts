@@ -31,7 +31,7 @@ async function runNotificationWorker() {
       // Pop from processed signals queue (lpop to match lpush from signal worker)
       const payload = await redis.lpop(queueKey)
       if (!payload) {
-        await sleep(5000) // Wait 5 seconds instead of 1 to reduce Redis requests
+        await sleep(30000) // Wait 30 seconds to reduce Redis requests
         continue
       }
 

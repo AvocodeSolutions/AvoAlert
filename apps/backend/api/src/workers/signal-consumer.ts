@@ -14,7 +14,7 @@ async function runWorker() {
       // Polling pop; if empty, wait a bit
       const payload = await redis.rpop(queueKey as string)
       if (!payload) {
-        await sleep(2000) // Increased from 500ms to 2s to reduce Redis requests
+        await sleep(10000) // Wait 10 seconds to reduce Redis requests
         continue
       }
       const raw = typeof payload === 'string' ? payload : JSON.stringify(payload)
