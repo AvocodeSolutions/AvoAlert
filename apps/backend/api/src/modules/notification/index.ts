@@ -151,22 +151,9 @@ notificationRouter.get('/triggered-alarms', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'email_required' })
     }
 
-    // Read triggered alarms from Redis
-    const items = await getRedis().lrange('triggered_alarms', 0, 99)
-    const parsed = items
-      .map((x) => {
-        try { 
-          const item = typeof x === 'string' ? JSON.parse(x) : x
-          return item
-        } catch { 
-          return null 
-        }
-      })
-      .filter(Boolean)
-      .filter((item: any) => item.email === email) // Filter by user email
-      .slice(0, 20) // Latest 20 for this user
-
-    res.json({ ok: true, triggered: parsed })
+    // Redis limit exceeded, just return empty for now  
+    console.warn('Redis limit exceeded, returning empty triggered alarms')
+    res.json({ ok: true, triggered: [] })
   } catch (e) {
     return res.status(500).json({ ok: false, error: (e as Error).message })
   }

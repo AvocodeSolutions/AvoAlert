@@ -249,26 +249,8 @@ const CustomerDashboard = memo(() => {
         const errorText = await response.text()
         console.warn('Prices API failed, generating mock data for development:', response.status, errorText)
         
-        // Fallback: Generate mock price data if API is unavailable
-        if (response.status === 404) {
-          const mockPrices = new Map()
-          activeSymbols.slice(0, 20).forEach(symbol => {
-            const basePrice = symbol === 'BTCUSDT' ? 115000 : 
-                             symbol === 'ETHUSDT' ? 4300 :
-                             symbol === 'BNBUSDT' ? 650 :
-                             Math.random() * 1000 + 100
-            
-            mockPrices.set(symbol, {
-              symbol,
-              price: basePrice + (Math.random() - 0.5) * basePrice * 0.05,
-              change24h: (Math.random() - 0.5) * 10,
-              lastUpdate: new Date().toISOString()
-            })
-          })
-          
-          setPrices(mockPrices)
-          console.log(`💰 Using mock prices for ${mockPrices.size} symbols (API unavailable)`)
-        }
+        // Just log error, don't use mock data
+        console.error('Prices API failed:', response.status, errorText)
         return
       }
     } catch (error) {
@@ -474,10 +456,8 @@ const CustomerDashboard = memo(() => {
   useEffect(() => {
     console.log('Coins loaded:', activeCoins.length, 'active coins')
     if (activeCoins.length > 0) {
-      // Delay initial full fetch to let popular prices show first
-      const initialFetchTimeout = setTimeout(() => {
-        fetchPrices()
-      }, 500)
+      // Immediate full fetch - no delay
+      fetchPrices()
       
       // Set up interval with optimized delay
       const priceInterval = setInterval(() => {
@@ -486,8 +466,7 @@ const CustomerDashboard = memo(() => {
       }, 12000) // Slightly faster updates
       
       return () => {
-        console.log('Cleaning up price interval and timeout')
-        clearTimeout(initialFetchTimeout)
+        console.log('Cleaning up price interval')
         clearInterval(priceInterval)
       }
     }
