@@ -97,8 +97,8 @@ async function runNotificationWorker() {
           // For now, push to Redis for the frontend to read
           console.log('[notification-worker] Saving triggered alarm to Redis:', JSON.stringify(triggeredAlarm, null, 2))
           await redis.lpush('triggered_alarms', JSON.stringify(triggeredAlarm))
-          await redis.ltrim('triggered_alarms', 0, 99)
-          console.log('[notification-worker] ✅ Triggered alarm saved to Redis') // Keep latest 100
+          await redis.ltrim('triggered_alarms', 0, 99) // Keep latest 100
+          console.log('[notification-worker] ✅ Triggered alarm saved to Redis')
 
           // Also save to admin notifications for monitoring
           const notification = {
