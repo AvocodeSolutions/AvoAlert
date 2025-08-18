@@ -1023,8 +1023,7 @@ const CustomerDashboard = memo(() => {
             </Card>
 
             {/* Real-time Prices */}
-            {prices.size > 0 && (
-              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -1039,8 +1038,21 @@ const CustomerDashboard = memo(() => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
-                    {Array.from(prices.entries()).slice(0, 20).map(([symbol, priceData]) => (
+                  {/* DEBUG INFO */}
+                  <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900 rounded text-sm">
+                    <strong>DEBUG:</strong> prices.size = {prices.size}, 
+                    WebSocket symbols = {Array.from(prices.keys()).slice(0, 5).join(', ')}
+                    {prices.size === 0 && <div className="text-red-600 mt-1">⚠️ Prices Map is empty! Check WebSocket connection.</div>}
+                  </div>
+                  
+                  {prices.size === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-lg mb-2">🔄 WebSocket fiyatları yükleniyor...</div>
+                      <div className="text-sm text-gray-500">Console'da logları kontrol edin</div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+                      {Array.from(prices.entries()).slice(0, 20).map(([symbol, priceData]) => (
                       <div key={symbol} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-800">
                         <div className="flex justify-between items-center">
                           <span className="font-semibold text-sm">{symbol}</span>
@@ -1055,11 +1067,11 @@ const CustomerDashboard = memo(() => {
                           </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
           </div>
         )}
 
