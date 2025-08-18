@@ -1009,6 +1009,45 @@ const CustomerDashboard = memo(() => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Real-time Prices */}
+            {prices.size > 0 && (
+              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Canlı Fiyatlar</CardTitle>
+                      <CardDescription className="text-sm">
+                        WebSocket ile canlı fiyat takibi ({prices.size} coin)
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-80 overflow-y-auto">
+                    {Array.from(prices.entries()).slice(0, 20).map(([symbol, priceData]) => (
+                      <div key={symbol} className="p-3 border rounded-lg bg-slate-50 dark:bg-slate-800">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-sm">{symbol}</span>
+                          <span className="text-lg font-bold">${priceData.price.toFixed(4)}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-slate-500">24h</span>
+                          <span className={`text-xs font-medium ${
+                            priceData.change24h >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
