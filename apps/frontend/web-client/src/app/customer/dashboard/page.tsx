@@ -296,6 +296,22 @@ const CustomerDashboard = memo(() => {
     }
   }, [email])
 
+  // Fetch triggered alarms - memoized
+  const fetchTriggeredAlarms = useCallback(async () => {
+    if (!email) return
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const response = await fetch(`${API_BASE}/notifications/triggered-alarms?email=${encodeURIComponent(email)}`)
+      if (response.ok) {
+        const data = await response.json()
+        setTriggeredAlarms(data.triggered || [])
+      }
+    } catch (error) {
+      console.error('Error fetching triggered alarms:', error)
+      setTriggeredAlarms([])
+    }
+  }, [email])
+
   // Create new alarm - memoized
   const createAlarm = useCallback(async () => {
     if (!email || !selectedCoin || !selectedAction) {
@@ -359,22 +375,6 @@ const CustomerDashboard = memo(() => {
       toast.error('Beklenmeyen hata!')
     }
   }, [fetchAlarms, fetchTriggeredAlarms])
-
-  // Fetch triggered alarms - memoized
-  const fetchTriggeredAlarms = useCallback(async () => {
-    if (!email) return
-    try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-      const response = await fetch(`${API_BASE}/notifications/triggered-alarms?email=${encodeURIComponent(email)}`)
-      if (response.ok) {
-        const data = await response.json()
-        setTriggeredAlarms(data.triggered || [])
-      }
-    } catch (error) {
-      console.error('Error fetching triggered alarms:', error)
-      setTriggeredAlarms([])
-    }
-  }, [email])
 
   // Problematic coins that should always use dummy SVG
   const BLACKLISTED_LOGOS = new Set(['COTIUSDT', 'CELOUSDT', 'DYDXUSDT', 'ENJUSDT', 'HBARUSDT'])
