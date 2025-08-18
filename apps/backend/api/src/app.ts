@@ -7,6 +7,9 @@ import { notificationRouter } from './modules/notification'
 import { billingRouter } from './modules/billing'
 import { adminRouter } from './modules/admin'
 import { CustomerRouter } from './modules/customer'
+import { createPricesModule } from './modules/prices'
+import { redis } from './infrastructure/queue/upstash'
+import { supabaseAdmin } from './infrastructure/supabase/client'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -22,7 +25,8 @@ const corsOptions = {
     'https://avoalert.com',  // Custom domain
     'https://www.avoalert.com'  // Custom domain with www
   ],
-  credentials: true
+  credentials: true,
+  optionsSuccessStatus: 200 // For legacy browser support
 }
 app.use(cors(corsOptions))
 app.use(express.json())
@@ -30,6 +34,23 @@ app.use(express.json())
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'api', architecture: 'modular-monolith' })
 })
+
+// Initialize Prices Module DIRECTLY - NO ASYNC
+console.log('🔧 Initializing prices module...')
+
+const defaultSymbols = [
+  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 
+  'DOGEUSDT', 'MATICUSDT', 'SOLUSDT', 'LTCUSDT', 'AVAXUSDT'
+]
+
+const pricesModule = createPricesModule({
+  redisClient: redis,
+  enableStream: process.env.ENABLE_PRICE_STREAM !== 'false',
+  defaultSymbols
+})
+
+app.use('/prices', pricesModule.router)
+console.log(`✅ Prices module initialized with ${defaultSymbols.length} symbols`)
 
 app.use('/signals', signalRouter)
 app.use('/notifications', notificationRouter)
