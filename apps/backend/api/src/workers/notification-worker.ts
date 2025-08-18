@@ -38,7 +38,7 @@ async function runNotificationWorker() {
       const raw = typeof payload === 'string' ? payload : JSON.stringify(payload)
       const signal: Signal = JSON.parse(raw)
       
-      console.log('[notification-worker] Processing signal for notifications:', signal)
+      console.log('[notification-worker] Processing signal for notifications:', JSON.stringify(signal, null, 2))
 
       // Find active user alarms for this exact coin symbol and action
       const { data: userAlarms, error } = await supabaseAdmin
@@ -95,8 +95,10 @@ async function runNotificationWorker() {
 
           // Save to triggered_alarms table (we need to create this table)
           // For now, push to Redis for the frontend to read
+          console.log('[notification-worker] Saving triggered alarm to Redis:', JSON.stringify(triggeredAlarm, null, 2))
           await redis.lpush('triggered_alarms', JSON.stringify(triggeredAlarm))
-          await redis.ltrim('triggered_alarms', 0, 99) // Keep latest 100
+          await redis.ltrim('triggered_alarms', 0, 99)
+          console.log('[notification-worker] ✅ Triggered alarm saved to Redis') // Keep latest 100
 
           // Also save to admin notifications for monitoring
           const notification = {
