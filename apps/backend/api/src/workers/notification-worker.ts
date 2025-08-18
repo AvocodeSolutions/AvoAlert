@@ -28,8 +28,8 @@ async function runNotificationWorker() {
   // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
-      // Pop from processed signals queue
-      const payload = await redis.rpop(queueKey)
+      // Pop from processed signals queue (lpop to match lpush from signal worker)
+      const payload = await redis.lpop(queueKey)
       if (!payload) {
         await sleep(5000) // Wait 5 seconds instead of 1 to reduce Redis requests
         continue

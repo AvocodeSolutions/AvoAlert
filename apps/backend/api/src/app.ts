@@ -105,7 +105,8 @@ app.get('/panel', async (req, res) => {
 })
 
 // Start workers if enabled (for free tier deployment)
-if (process.env.START_WORKERS === 'true') {
+// Default to true for Railway deployment
+if (process.env.START_WORKERS !== 'false') {
   console.log('Starting integrated workers...')
   console.log('Environment check - START_WORKERS:', process.env.START_WORKERS)
   console.log('Environment check - UPSTASH_REDIS_URL exists:', !!process.env.UPSTASH_REDIS_URL)
@@ -124,12 +125,12 @@ if (process.env.START_WORKERS === 'true') {
     console.error('Failed to start notification worker:', err)
   })
 } else {
-  console.log('Workers not enabled - START_WORKERS:', process.env.START_WORKERS)
+  console.log('Workers disabled by START_WORKERS=false')
 }
 
 app.listen(PORT, () => {
   console.log(`AvoAlert API running on port ${PORT}`)
-  if (process.env.START_WORKERS === 'true') {
+  if (process.env.START_WORKERS !== 'false') {
     console.log('Workers are integrated into this process')
   }
 })
