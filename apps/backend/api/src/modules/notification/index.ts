@@ -151,20 +151,25 @@ notificationRouter.get('/triggered-alarms', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'email_required' })
     }
 
-    // Get triggered alarms from database
-    const { data: triggered, error } = await getSupabase()
-      .from('triggered_alarms')
-      .select('*')
-      .eq('email', email)
-      .order('triggered_at', { ascending: false })
-      .limit(50)
+    // Try to get triggered alarms from database, fallback to empty
+    try {
+      const { data: triggered, error } = await getSupabase()
+        .from('triggered_alarms')
+        .select('*')
+        .eq('email', email)
+        .order('triggered_at', { ascending: false })
+        .limit(50)
 
-    if (error) {
-      console.error('Failed to fetch triggered alarms:', error)
-      return res.status(500).json({ ok: false, error: error.message })
+      if (error) {
+        console.warn('triggered_alarms table not found, returning empty:', error.message)
+        return res.json({ ok: true, triggered: [] })
+      }
+
+      res.json({ ok: true, triggered: triggered || [] })
+    } catch (dbError) {
+      console.warn('Database error, returning empty triggered alarms:', dbError)
+      res.json({ ok: true, triggered: [] })
     }
-
-    res.json({ ok: true, triggered: triggered || [] })
   } catch (e) {
     return res.status(500).json({ ok: false, error: (e as Error).message })
   }

@@ -231,11 +231,20 @@ const CustomerDashboard = memo(() => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
+        
+        // Skip subscription confirmation messages
+        if (data.result === null) {
+          console.log('✅ WebSocket subscription confirmed')
+          return
+        }
+        
         if (data.stream && data.data) {
           const ticker = data.data
           const symbol = ticker.s
           
           if (symbol) {
+            console.log(`💰 Price update: ${symbol} = $${ticker.c}`)
+            
             const priceData: PriceData = {
               symbol,
               price: parseFloat(ticker.c), // Current price
@@ -249,6 +258,8 @@ const CustomerDashboard = memo(() => {
               return newPrices
             })
           }
+        } else {
+          console.log('📨 WebSocket message:', data)
         }
       } catch (error) {
         console.error('WebSocket message error:', error)
