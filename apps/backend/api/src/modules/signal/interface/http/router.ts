@@ -104,7 +104,7 @@ signalRouter.post('/tradingview', async (req, res) => {
       symbol: normalizedSymbol,
       timeframe,
       action,
-      price,
+      price: price || 0, // Default to 0 if price is not provided
       timestamp: timestampIso,
     })
     try {

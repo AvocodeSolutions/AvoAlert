@@ -151,23 +151,30 @@ notificationRouter.get('/triggered-alarms', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'email_required' })
     }
 
-    // Try to get triggered alarms from database, fallback to empty
+    // Get triggered alarms from Redis queue (temporary solution)
     try {
-      const { data: triggered, error } = await getSupabase()
-        .from('triggered_alarms')
-        .select('*')
-        .eq('email', email)
-        .order('triggered_at', { ascending: false })
-        .limit(50)
-
-      if (error) {
-        console.warn('triggered_alarms table not found, returning empty:', error.message)
+      const redis = getRedis()
+      const triggeredList = await redis.lrange('triggered_alarms', 0, 99)
+      
+      if (!triggeredList || triggeredList.length === 0) {
         return res.json({ ok: true, triggered: [] })
       }
 
-      res.json({ ok: true, triggered: triggered || [] })
-    } catch (dbError) {
-      console.warn('Database error, returning empty triggered alarms:', dbError)
+      // Parse and filter by email
+      const triggered = triggeredList
+        .map(item => {
+          try {
+            return JSON.parse(typeof item === 'string' ? item : JSON.stringify(item))
+          } catch {
+            return null
+          }
+        })
+        .filter(item => item && item.email === email)
+        .slice(0, 50) // Limit to 50
+
+      res.json({ ok: true, triggered })
+    } catch (redisError) {
+      console.warn('Redis error, returning empty triggered alarms:', redisError)
       res.json({ ok: true, triggered: [] })
     }
   } catch (e) {

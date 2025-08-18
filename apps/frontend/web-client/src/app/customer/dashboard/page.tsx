@@ -255,6 +255,7 @@ const CustomerDashboard = memo(() => {
             setPrices(prevPrices => {
               const newPrices = new Map(prevPrices)
               newPrices.set(symbol, priceData)
+              console.log(`🔄 UI Updated: ${symbol} = $${priceData.price} (total: ${newPrices.size} prices)`)
               return newPrices
             })
           }

@@ -16,6 +16,7 @@ interface Signal {
   timeframe: string
   action: string
   timestamp: string
+  price: number
 }
 
 async function runNotificationWorker() {
@@ -30,7 +31,7 @@ async function runNotificationWorker() {
       // Pop from processed signals queue
       const payload = await redis.rpop(queueKey)
       if (!payload) {
-        await sleep(1000) // Wait longer for notifications
+        await sleep(5000) // Wait 5 seconds instead of 1 to reduce Redis requests
         continue
       }
 
@@ -87,6 +88,7 @@ async function runNotificationWorker() {
             coin_symbol: signal.symbol,
             timeframe: signal.timeframe,
             action: signal.action,
+            price: signal.price,
             signal_timestamp: signal.timestamp,
             triggered_at: new Date().toISOString()
           }

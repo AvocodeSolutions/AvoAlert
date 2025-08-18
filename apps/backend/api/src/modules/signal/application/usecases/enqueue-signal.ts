@@ -5,6 +5,7 @@ export interface EnqueueSignalPayload {
   timeframe: string
   action: 'buy' | 'sell'
   timestamp: string
+  price: number
 }
 
 // Minimal queue producer: pushes raw signal into a Redis list for a worker to consume.
@@ -61,20 +62,54 @@ async function processSignalDirectly(payload: EnqueueSignalPayload) {
         email: alarm.email,
         coin_symbol: payload.symbol,
         action: payload.action,
-        price: 0, // Would get from price data
+        price: payload.price,
         triggered_at: new Date().toISOString(),
         message: `${payload.symbol} ${payload.action} signal triggered`
       }
       
-      // Insert into triggered_alarms table
-      const { error: insertError } = await supabaseAdmin
-        .from('triggered_alarms')
-        .insert([triggeredData])
+      // Save to Redis triggered alarms list for the frontend to read
+      try {
+        const { redis } = await import('../../../../infrastructure/queue/upstash')
+        await redis.lpush('triggered_alarms', JSON.stringify(triggeredData))
+        await redis.ltrim('triggered_alarms', 0, 99) // Keep latest 100
+        console.log('✅ Triggered alarm saved to Redis:', triggeredData)
+      } catch (redisError) {
+        console.error('Failed to save triggered alarm to Redis:', redisError)
+      }
       
-      if (insertError) {
-        console.error('Failed to save triggered alarm:', insertError)
+      // Deactivate the alarm after triggering
+      const { error: deactivateError } = await supabaseAdmin
+        .from('user_alarms')
+        .update({ is_active: false })
+        .eq('id', alarm.id)
+
+      if (deactivateError) {
+        console.error(`Error deactivating alarm ${alarm.id}:`, deactivateError)
       } else {
-        console.log('✅ Triggered alarm saved:', triggeredData)
+        console.log(`✅ Alarm ${alarm.id} deactivated after triggering`)
+      }
+      
+      // Send email notification
+      try {
+        const { createEmailService } = await import('../../../notification/infrastructure/email-service')
+        const emailService = createEmailService()
+        
+        const emailResult = await emailService.sendAlarmTriggeredEmail({
+          email: alarm.email,
+          coinSymbol: payload.symbol,
+          action: payload.action as 'buy' | 'sell',
+          timeframe: payload.timeframe,
+          signalTime: payload.timestamp,
+          notificationTime: new Date().toISOString()
+        })
+
+        if (emailResult.success) {
+          console.log(`📧 ✅ Email sent successfully to ${alarm.email}, Message ID: ${emailResult.messageId}`)
+        } else {
+          console.error(`📧 ❌ Failed to send email to ${alarm.email}:`, emailResult.error)
+        }
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError)
       }
     }
     
