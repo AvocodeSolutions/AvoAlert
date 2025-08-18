@@ -35,22 +35,42 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'api', architecture: 'modular-monolith' })
 })
 
-// Initialize Prices Module DIRECTLY - NO ASYNC
+// Initialize Prices Module with database symbols
 console.log('🔧 Initializing prices module...')
 
-const defaultSymbols = [
-  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 
-  'DOGEUSDT', 'MATICUSDT', 'SOLUSDT', 'LTCUSDT', 'AVAXUSDT'
-]
+async function initializePricesModule() {
+  // Get all active coins from database for WebSocket stream
+  let defaultSymbols: string[] = []
+  try {
+    const { data: coins } = await supabaseAdmin
+      .from('coins')
+      .select('symbol')
+      .eq('active', true)
+    
+    defaultSymbols = coins?.map(coin => coin.symbol) || []
+    console.log(`📊 Found ${defaultSymbols.length} active coins for WebSocket stream`)
+  } catch (error) {
+    console.error('Failed to fetch coins, using fallback symbols:', error)
+    defaultSymbols = [
+      'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 
+      'DOGEUSDT', 'MATICUSDT', 'SOLUSDT', 'LTCUSDT', 'AVAXUSDT'
+    ]
+  }
 
-const pricesModule = createPricesModule({
-  redisClient: redis,
-  enableStream: process.env.ENABLE_PRICE_STREAM !== 'false',
-  defaultSymbols
+  const pricesModule = createPricesModule({
+    redisClient: redis,
+    enableStream: process.env.ENABLE_PRICE_STREAM !== 'false',
+    defaultSymbols
+  })
+  
+  app.use('/prices', pricesModule.router)
+  console.log(`✅ Prices module initialized with ${defaultSymbols.length} symbols`)
+}
+
+// Initialize prices module asynchronously
+initializePricesModule().catch(error => {
+  console.error('Failed to initialize prices module:', error)
 })
-
-app.use('/prices', pricesModule.router)
-console.log(`✅ Prices module initialized with ${defaultSymbols.length} symbols`)
 
 app.use('/signals', signalRouter)
 app.use('/notifications', notificationRouter)
