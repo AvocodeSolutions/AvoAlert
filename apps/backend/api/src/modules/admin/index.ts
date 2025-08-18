@@ -44,6 +44,49 @@ adminRouter.get('/triggered-alarms', async (req, res) => {
   }
 })
 
+// DEBUG: Check all Redis queues
+adminRouter.get('/debug-redis', async (req, res) => {
+  try {
+    const [
+      qSignalLen,
+      qProcessedLen, 
+      triggeredLen,
+      notificationsLen,
+      qSignalItems,
+      qProcessedItems,
+      triggeredItems,
+      notificationItems
+    ] = await Promise.all([
+      redis.llen('q:signal').catch(() => 0),
+      redis.llen('q:signal:processed').catch(() => 0),
+      redis.llen('triggered_alarms').catch(() => 0),
+      redis.llen('admin:notifications').catch(() => 0),
+      redis.lrange('q:signal', 0, 4).catch(() => []),
+      redis.lrange('q:signal:processed', 0, 4).catch(() => []),
+      redis.lrange('triggered_alarms', 0, 4).catch(() => []),
+      redis.lrange('admin:notifications', 0, 4).catch(() => [])
+    ])
+    
+    res.json({ 
+      ok: true, 
+      lengths: {
+        'q:signal': qSignalLen,
+        'q:signal:processed': qProcessedLen,
+        'triggered_alarms': triggeredLen,
+        'admin:notifications': notificationsLen
+      },
+      samples: {
+        'q:signal': qSignalItems.map(x => safeParse(x)).filter(Boolean),
+        'q:signal:processed': qProcessedItems.map(x => safeParse(x)).filter(Boolean),
+        'triggered_alarms': triggeredItems.map(x => safeParse(x)).filter(Boolean),
+        'admin:notifications': notificationItems.map(x => safeParse(x)).filter(Boolean)
+      }
+    })
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message })
+  }
+})
+
 // ---------- Queue monitoring (for monitoring page) ----------
 adminRouter.get('/queue-stats', async (_req, res) => {
   try {
