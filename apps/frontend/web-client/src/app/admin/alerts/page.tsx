@@ -592,18 +592,33 @@ if sell
 
       {/* Groups sekmesi */}
       {activeTab === 'groups' && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Coin Grupları</CardTitle>
-            <CardDescription>Birlikte yönetmek için sembol kümeleri</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Coin Groups</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Birlikte yönetmek için sembol kümeleri</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-xs text-gray-600">Toplam grup: {groups.length}</div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <input className="border rounded px-2 py-1" placeholder="Group Name" value={newGroup.name} onChange={e=>setNewGroup({...newGroup,name:e.target.value})} />
-              <input className="border rounded px-2 py-1" placeholder="Symbols (CSV)" value={newGroup.symbolsText} onChange={e=>setNewGroup({...newGroup,symbolsText:e.target.value})} />
-              <Button className="col-span-2" disabled={loading}
+          <CardContent className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Toplam Gruplar</span>
+              <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">{groups.length}</Badge>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                Yeni Grup Oluştur
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="Group Name" value={newGroup.name} onChange={e=>setNewGroup({...newGroup,name:e.target.value})} />
+                <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" placeholder="Symbols (CSV)" value={newGroup.symbolsText} onChange={e=>setNewGroup({...newGroup,symbolsText:e.target.value})} />
+                <Button className="col-span-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" disabled={loading}
                 onClick={async ()=>{
                   try{
                     setLoading(true)
@@ -611,42 +626,67 @@ if sell
                     await fetch(`${API_BASE}/admin/groups`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:newGroup.name,symbols})})
                     await loadAll()
                   }catch(err){ alert('Grup kaydedilemedi') } finally{ setLoading(false) }
-                }}>Grup Kaydet</Button>
+                }}>💾 Grup Kaydet</Button>
+              </div>
             </div>
-            <div className="mt-3 text-xs bg-gray-50 p-3 rounded max-h-64 overflow-auto">
-              <ul className="space-y-1">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 max-h-80 overflow-auto">
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Mevcut Gruplar</h4>
+              <ul className="space-y-2">
                 {groups.map(g => (
-                  <li key={g.id} className="">
-                    <button className="w-full flex justify-between gap-2 hover:bg-gray-100 px-2 py-1 rounded"
+                  <li key={g.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <button className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all duration-200"
                       onClick={()=> setExpandedGroupId(expandedGroupId===g.id?null:g.id)}>
-                      <span className="font-mono text-left">{g.name}</span>
-                      <span className="text-gray-600">{(g.symbols || []).length} symbol</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                        <span className="font-mono text-slate-900 dark:text-white font-medium">{g.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{(g.symbols || []).length} symbols</Badge>
+                        <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform ${expandedGroupId===g.id ? 'rotate-90' : ''}`} />
+                      </div>
                     </button>
                     {expandedGroupId===g.id && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {(g.symbols||[]).map((s,idx)=> (
-                          <span key={idx} className="px-1.5 py-0.5 bg-white border rounded">{s}</span>
-                        ))}
+                      <div className="p-3 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-600">
+                        <div className="flex flex-wrap gap-2">
+                          {(g.symbols||[]).map((s,idx)=> (
+                            <span key={idx} className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs rounded-md border border-emerald-200 dark:border-emerald-800">{s}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </li>
                 ))}
-                {groups.length===0 && <li className="text-gray-500">Kayıt yok.</li>}
+                {groups.length===0 && <li className="text-slate-500 dark:text-slate-400 text-center py-8">Kayıt yok.</li>}
               </ul>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Timeframe Setleri</CardTitle>
-            <CardDescription>Önceden tanımlı TF listeleri</CardDescription>
+        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-950/50 dark:to-blue-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg">
+                <Activity className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Timeframe Sets</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Önceden tanımlı TF listeleri</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-xs text-gray-600">Toplam set: {tfs.length}</div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <input className="border rounded px-2 py-1" placeholder="Set Name" value={newTF.name} onChange={e=>setNewTF({...newTF,name:e.target.value})} />
-              <input className="border rounded px-2 py-1" placeholder="TFs (CSV) örn: 15m,1h,4h" value={newTF.timeframesText} onChange={e=>setNewTF({...newTF,timeframesText:e.target.value})} />
-              <Button className="col-span-2" disabled={loading}
+          <CardContent className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Toplam Sets</span>
+              <Badge variant="secondary" className="bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300">{tfs.length}</Badge>
+            </div>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                Yeni Set Oluştur
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="Set Name" value={newTF.name} onChange={e=>setNewTF({...newTF,name:e.target.value})} />
+                <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="TFs (CSV) örn: 15m,1h,4h" value={newTF.timeframesText} onChange={e=>setNewTF({...newTF,timeframesText:e.target.value})} />
+                <Button className="col-span-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" disabled={loading}
                 onClick={async ()=>{
                   try{
                     setLoading(true)
@@ -654,27 +694,37 @@ if sell
                     await fetch(`${API_BASE}/admin/timeframes`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:newTF.name,timeframes})})
                     await loadAll()
                   }catch(err){ alert('Timeframe set kaydedilemedi') } finally{ setLoading(false) }
-                }}>Set Kaydet</Button>
+                }}>⏰ Set Kaydet</Button>
+              </div>
             </div>
-            <div className="mt-3 text-xs bg-gray-50 p-3 rounded max-h-64 overflow-auto">
-              <ul className="space-y-1">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700 max-h-80 overflow-auto">
+              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Mevcut Sets</h4>
+              <ul className="space-y-2">
                 {tfs.map(t => (
-                  <li key={t.id} className="">
-                    <button className="w-full flex justify-between gap-2 hover:bg-gray-100 px-2 py-1 rounded"
+                  <li key={t.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <button className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all duration-200"
                       onClick={()=> setExpandedTFSetId(expandedTFSetId===t.id?null:t.id)}>
-                      <span className="font-mono text-left">{t.name}</span>
-                      <span className="text-gray-600">{(t.timeframes || []).length} TF</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                        <span className="font-mono text-slate-900 dark:text-white font-medium">{t.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{(t.timeframes || []).length} TFs</Badge>
+                        <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform ${expandedTFSetId===t.id ? 'rotate-90' : ''}`} />
+                      </div>
                     </button>
                     {expandedTFSetId===t.id && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {(t.timeframes||[]).map((tf,idx)=> (
-                          <span key={idx} className="px-1.5 py-0.5 bg-white border rounded">{tf}</span>
-                        ))}
+                      <div className="p-3 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-200 dark:border-slate-600">
+                        <div className="flex flex-wrap gap-2">
+                          {(t.timeframes||[]).map((tf,idx)=> (
+                            <span key={idx} className="px-2 py-1 bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 text-xs rounded-md border border-cyan-200 dark:border-cyan-800">{tf}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </li>
                 ))}
-                {tfs.length===0 && <li className="text-gray-500">Kayıt yok.</li>}
+                {tfs.length===0 && <li className="text-slate-500 dark:text-slate-400 text-center py-8">Kayıt yok.</li>}
               </ul>
             </div>
           </CardContent>
@@ -683,17 +733,29 @@ if sell
       )}
       {/* Indicators sekmesi */}
       {activeTab === 'indicators' && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Indicators</CardTitle>
-            <CardDescription>İndikatör tanımı ve Pine şablonu</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/50 dark:to-purple-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Indicator Management</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">İndikatör tanımı ve Pine şablonu</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm items-end">
-              <div className="col-span-2">
-                <label className="text-xs text-gray-600">Mevcut Indicator Seç</label>
-                <select className="w-full border rounded px-2 py-1" value={selectedIndicatorId} onChange={e=>{
+          <CardContent className="p-6 space-y-6">
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                <div className="w-2 h-2 bg-violet-500 rounded-full"></div>
+                Indicator Selection
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Mevcut Indicator Seç</label>
+                  <select className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" value={selectedIndicatorId} onChange={e=>{
                   const id = e.target.value
                   setSelectedIndicatorId(id)
                   setIndicatorEditModeNew(false)
@@ -707,43 +769,52 @@ if sell
                   {indicators.map(d => <option key={d.id} value={d.id}>{d.name} ({d.key})</option>)}
                 </select>
               </div>
-              <div className="col-span-1 flex items-end justify-between text-xs text-gray-600">
-                <Badge variant="secondary">{indicators.length}</Badge>
-                <Button variant="outline" size="sm" onClick={()=>{ setIndicatorEditModeNew(true); setNewIndicator({ name:'', key:'', template:'', params:[{k:'',t:'number',v:''}] }) }}>Yeni</Button>
+                <div className="col-span-1 flex items-end justify-between">
+                  <Badge variant="secondary" className="bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300">{indicators.length}</Badge>
+                  <Button variant="outline" size="sm" className="border-violet-200 text-violet-600 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400 dark:hover:bg-violet-950" onClick={()=>{ setIndicatorEditModeNew(true); setNewIndicator({ name:'', key:'', template:'', params:[{k:'',t:'number',v:''}] }) }}>+ Yeni</Button>
+                </div>
               </div>
             </div>
-            <div className="mt-3 border-t pt-3 grid grid-cols-2 gap-2 text-sm">
-              <input className="border rounded px-2 py-1" placeholder="Name (örn. UT Bot)" value={newIndicator.name} onChange={e=>setNewIndicator({...newIndicator,name:e.target.value})} disabled={!canEditIndicator} />
-              <input className="border rounded px-2 py-1" placeholder="Key (örn. utbot)" value={newIndicator.key} onChange={e=>setNewIndicator({...newIndicator,key:e.target.value})} disabled={!canEditIndicator} />
-              <textarea className="col-span-2 border rounded px-2 py-1 h-24" placeholder="Pine template (opsiyonel). {{PRESET_ID}}, {{PRESET_VERSION}}, {{SECRET_LINE}}, {{SECRET_FIELD}}, {{INDICATOR_KEY}} placeholder destekler." value={newIndicator.template} onChange={e=>setNewIndicator({...newIndicator,template:e.target.value})} disabled={!canEditIndicator} />
-              {/* Default Params */}
-              <div className="col-span-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-gray-600">Default Params (opsiyonel)</span>
-                  <Button variant="outline" size="sm" onClick={()=> setNewIndicator({...newIndicator, params:[...newIndicator.params, {k:'',t:'number',v:''}]})} disabled={!canEditIndicator || !indicatorEditModeNew && !selectedIndicatorId}>+</Button>
-                </div>
-                <div className="space-y-2">
-                  {newIndicator.params.map((p,idx)=> (
-                    <div key={idx} className="grid grid-cols-5 gap-2">
-                      <input className="border rounded px-2 py-1" placeholder="name" value={p.k} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],k:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
-                      <select className="border rounded px-2 py-1" value={p.t} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],t:e.target.value as ParamType}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h3 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                Indicator Oluştur / Güncelle
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" placeholder="Name (örn. UT Bot)" value={newIndicator.name} onChange={e=>setNewIndicator({...newIndicator,name:e.target.value})} disabled={!canEditIndicator} />
+                <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" placeholder="Key (örn. utbot)" value={newIndicator.key} onChange={e=>setNewIndicator({...newIndicator,key:e.target.value})} disabled={!canEditIndicator} />
+                <textarea className="col-span-2 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all h-24 resize-none" placeholder="Pine template (opsiyonel). {{PRESET_ID}}, {{PRESET_VERSION}}, {{SECRET_LINE}}, {{SECRET_FIELD}}, {{INDICATOR_KEY}} placeholder destekler." value={newIndicator.template} onChange={e=>setNewIndicator({...newIndicator,template:e.target.value})} disabled={!canEditIndicator} />
+                {/* Default Params */}
+                <div className="col-span-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                      Default Params (opsiyonel)
+                    </span>
+                    <Button variant="outline" size="sm" className="border-violet-200 text-violet-600 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400 dark:hover:bg-violet-950" onClick={()=> setNewIndicator({...newIndicator, params:[...newIndicator.params, {k:'',t:'number',v:''}]})} disabled={!canEditIndicator || !indicatorEditModeNew && !selectedIndicatorId}>+ Param</Button>
+                  </div>
+                  <div className="space-y-3">
+                    {newIndicator.params.map((p,idx)=> (
+                      <div key={idx} className="grid grid-cols-5 gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" placeholder="name" value={p.k} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],k:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
+                        <select className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" value={p.t} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],t:e.target.value as ParamType}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>
                         <option value="number">number</option>
                         <option value="boolean">boolean</option>
                       </select>
-                      {p.t==='boolean' ? (
-                        <select className="border rounded px-2 py-1" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>
-                          <option value="true">true</option>
-                          <option value="false">false</option>
-                        </select>
-                      ) : (
-                        <input className="border rounded px-2 py-1" placeholder="value" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
-                      )}
-                      <Button variant="outline" size="sm" onClick={()=>{ const arr=newIndicator.params.filter((_,i)=>i!==idx); setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>Sil</Button>
+                        {p.t==='boolean' ? (
+                          <select className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                          </select>
+                        ) : (
+                          <input className="border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all" placeholder="value" value={p.v} onChange={e=>{ const arr=[...newIndicator.params]; arr[idx]={...arr[idx],v:e.target.value}; setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator} />
+                        )}
+                        <Button variant="outline" size="sm" className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950" onClick={()=>{ const arr=newIndicator.params.filter((_,i)=>i!==idx); setNewIndicator({...newIndicator, params:arr}) }} disabled={!canEditIndicator}>🗑️</Button>
                     </div>
                   ))}
                 </div>
               </div>
-              <Button className="col-span-2" disabled={loading || !canEditIndicator}
+                <Button className="col-span-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-medium py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200" disabled={loading || !canEditIndicator}
                 onClick={async ()=>{
                   if(!newIndicator.name || !newIndicator.key){ alert('Name ve Key gerekli'); return }
                   const default_params = newIndicator.params.reduce((acc:any, cur)=>{ if(!cur.k) return acc; acc[cur.k] = cur.t==='boolean' ? (cur.v==='true') : (cur.t==='number' ? Number(cur.v) : cur.v); return acc }, {} as any)
@@ -756,27 +827,41 @@ if sell
                     }
                     await loadAll()
                   }catch(err){ alert('Indicator kaydedilemedi') } finally{ setLoading(false) }
-                }}>{indicatorEditModeNew ? 'Yeni Indicator Kaydet' : 'Indicator Güncelle'}</Button>
+                }}>{indicatorEditModeNew ? '✨ Yeni Indicator Kaydet' : '📝 Indicator Güncelle'}</Button>
+              </div>
             </div>
           </CardContent>
         </Card>
         {/* Indicator listesi */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Indicator Listesi</CardTitle>
-            <CardDescription>Mevcut indicator kayıtları</CardDescription>
+        <Card className="shadow-xl border border-slate-200/60 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/50 dark:to-violet-950/50 border-b border-slate-200/50 dark:border-slate-700/50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold text-slate-900 dark:text-white">Indicator Directory</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400 mt-1">Mevcut indicator kayıtları</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xs text-gray-600 mb-2">Toplam: {indicators.length}</div>
-            <div className="text-xs bg-gray-50 p-3 rounded max-h-72 overflow-auto">
-              <ul className="space-y-1">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Toplam Indicators</span>
+              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">{indicators.length}</Badge>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 max-h-80 overflow-auto">
+              <ul className="space-y-2">
                 {indicators.map((d)=> (
-                  <li key={d.id} className="flex justify-between gap-2">
-                    <span className="font-mono">{d.name}</span>
-                    <span className="text-gray-600">({d.key})</span>
+                  <li key={d.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                      <span className="font-mono text-slate-900 dark:text-white font-medium">{d.name}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">({d.key})</Badge>
                   </li>
                 ))}
-                {indicators.length===0 && <li className="text-gray-500">Kayıt yok.</li>}
+                {indicators.length===0 && <li className="text-slate-500 dark:text-slate-400 text-center py-8">Kayıt yok.</li>}
               </ul>
             </div>
           </CardContent>

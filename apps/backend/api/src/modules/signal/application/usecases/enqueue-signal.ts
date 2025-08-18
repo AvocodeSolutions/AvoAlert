@@ -18,18 +18,61 @@ export async function enqueueSignal(payload: EnqueueSignalPayload): Promise<void
     await redis.lpush('q:signal:enqueued', JSON.stringify(monitorItem))
     await redis.ltrim('q:signal:enqueued', 0, 99)
   } catch (error) {
-    // Redis limit exceeded or down - log signal but don't fail webhook
+    // Redis limit exceeded or down - process signal immediately
     console.warn('⚠️  Redis queue failed, processing signal directly:', error.message)
     
-    // Process signal immediately without queue (direct processing)
-    console.log('📡 Processing signal directly (Redis unavailable):', {
-      symbol: payload.symbol,
-      action: payload.action,
-      timestamp: payload.timestamp
-    })
-    
-    // Signal processed successfully even without Redis queue
+    // DIRECT ALARM PROCESSING - trigger alarms immediately
+    await processSignalDirectly(payload)
     return
+  }
+}
+
+// Direct signal processing when Redis is unavailable
+async function processSignalDirectly(payload: EnqueueSignalPayload) {
+  try {
+    const { supabaseAdmin } = await import('../../../../infrastructure/supabase/client')
+    
+    console.log('📡 Processing signal directly:', payload)
+    
+    // Get user alarms for this symbol and action
+    const { data: alarms, error } = await supabaseAdmin
+      .from('user_alarms')
+      .select('*')
+      .eq('coin_symbol', payload.symbol)
+      .eq('action', payload.action)
+      .eq('is_active', true)
+
+    if (error) {
+      console.error('Failed to fetch user alarms:', error)
+      return
+    }
+
+    if (!alarms || alarms.length === 0) {
+      console.log('No active alarms for', payload.symbol, payload.action)
+      return
+    }
+
+    // Simulate triggered alarms (without Redis)
+    for (const alarm of alarms) {
+      console.log(`🚨 ALARM TRIGGERED: ${alarm.email} - ${payload.symbol} ${payload.action}`)
+      
+      // Here you would normally send notification
+      // For now just log it
+      const triggeredData = {
+        id: `direct-${Date.now()}`,
+        email: alarm.email,
+        coin_symbol: payload.symbol,
+        action: payload.action,
+        price: 0, // Would get from price data
+        triggered_at: new Date().toISOString(),
+        message: `${payload.symbol} ${payload.action} signal triggered`
+      }
+      
+      console.log('📧 Would send notification:', triggeredData)
+    }
+    
+  } catch (err) {
+    console.error('Direct signal processing failed:', err)
   }
 }
 

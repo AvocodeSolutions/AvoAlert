@@ -12,7 +12,8 @@
       "Bash(curl:*)",
       "Bash(npm run:*)",
       "Bash(mkdir:*)",
-      "WebFetch(domain:cryptofonts.com)"
+      "WebFetch(domain:cryptofonts.com)",
+      "WebFetch(domain:api.binance.com)"
     ],
     "deny": []
   }

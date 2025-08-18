@@ -400,43 +400,15 @@ const CustomerDashboard = memo(() => {
     })
   }, [failedLogos])
 
-  // Optimized initial data load - parallel loading
+  // FAST initial data load - immediate coins, parallel prices
   useEffect(() => {
-    console.log('🚀 Starting optimized parallel data loading...')
-    const startTime = performance.now()
+    console.log('🚀 FAST loading - coins first, then immediate prices')
     
-    // Load coins and prices in parallel for faster initial load
-    Promise.all([
-      fetchCoins(),
-      // Pre-fetch prices for popular coins to show immediately
-      (async () => {
-        try {
-          const popularSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT']
-          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
-          const response = await fetch(`${API_BASE}/prices/current?symbols=${popularSymbols.join(',')}`)
-          if (response.ok) {
-            const data = await response.json()
-            if (data.success && data.data?.prices) {
-              const initialPrices = new Map()
-              Object.entries(data.data.prices).forEach(([symbol, priceData]: [string, any]) => {
-                initialPrices.set(symbol, {
-                  symbol,
-                  price: priceData.p || 0,
-                  change24h: priceData.c || 0,
-                  lastUpdate: priceData.u || new Date().toISOString()
-                })
-              })
-              setPrices(initialPrices)
-              console.log(`⚡ Pre-loaded ${initialPrices.size} popular prices`)
-            }
-          }
-        } catch (error) {
-          console.error('Pre-loading popular prices failed:', error)
-        }
-      })()
-    ]).then(() => {
-      const loadTime = performance.now() - startTime
-      console.log(`✅ Initial data loaded in ${loadTime.toFixed(1)}ms`)
+    // Load coins immediately
+    fetchCoins().then(() => {
+      // As soon as coins load, fetch prices immediately (no delay)
+      console.log('⚡ Coins loaded, fetching prices immediately...')
+      fetchPrices()
     })
 
     if (email) {
@@ -452,25 +424,20 @@ const CustomerDashboard = memo(() => {
     }
   }, [coins.length, preloadLogos])
 
-  // Fetch all prices when coins are loaded - with proper cleanup
+  // Set up price refresh interval only (initial fetch handled above)
   useEffect(() => {
-    console.log('Coins loaded:', activeCoins.length, 'active coins')
     if (activeCoins.length > 0) {
-      // Immediate full fetch - no delay
-      fetchPrices()
-      
-      // Set up interval with optimized delay
+      // Set up interval for auto-refresh
       const priceInterval = setInterval(() => {
         console.log('Auto-refreshing prices...')
         fetchPrices()
-      }, 12000) // Slightly faster updates
+      }, 15000) // Every 15 seconds
       
       return () => {
-        console.log('Cleaning up price interval')
         clearInterval(priceInterval)
       }
     }
-  }, [activeCoins.length])  // Remove fetchPrices from deps to prevent loops
+  }, [activeCoins.length])
 
   // Report failed logos after load
   useEffect(() => {
