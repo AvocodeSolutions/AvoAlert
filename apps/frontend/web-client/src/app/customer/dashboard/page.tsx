@@ -1038,9 +1038,9 @@ const CustomerDashboard = memo(() => {
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-xs text-slate-500">24h</span>
                           <span className={`text-xs font-medium ${
-                            priceData.change24h >= 0 ? 'text-green-600' : 'text-red-600'
+                            (priceData.change24h ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            {priceData.change24h >= 0 ? '+' : ''}{priceData.change24h.toFixed(2)}%
+                            {(priceData.change24h ?? 0) >= 0 ? '+' : ''}{(priceData.change24h ?? 0).toFixed(2)}%
                           </span>
                         </div>
                       </div>
