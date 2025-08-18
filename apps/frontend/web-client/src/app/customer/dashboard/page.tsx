@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Trash2, Mail, AlertCircle, Plus, TrendingUp, TrendingDown, Activity, Bell, Settings, User, BarChart3 } from 'lucide-react'
+import { Trash2, AlertCircle, Plus, TrendingUp, TrendingDown, Activity, Bell, Settings, User, BarChart3 } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Coin {
@@ -17,6 +16,110 @@ interface Coin {
   exchange: string
   active: boolean
   logo_url?: string
+}
+
+// Memoized table row component for better performance
+const PriceTableRow = React.memo(function PriceTableRow({ 
+  coin, 
+  symbol, 
+  priceData, 
+  failedLogos, 
+  setFailedLogos, 
+  onAlarmCreate,
+  getDummySvg,
+  shouldUseDummySvg 
+}: {
+  coin: Coin | undefined
+  symbol: string
+  priceData: PriceData
+  failedLogos: Set<string>
+  setFailedLogos: React.Dispatch<React.SetStateAction<Set<string>>>
+  onAlarmCreate: (symbol: string, action: 'buy' | 'sell') => void
+  getDummySvg: (symbol: string) => string
+  shouldUseDummySvg: (symbol: string) => boolean
+}) {
+
+  return (
+    <div key={symbol} className="grid grid-cols-12 items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+      {/* Rank */}
+      <div className="col-span-1 text-slate-500 font-mono text-sm">
+        #{Array.from(new Set([symbol])).indexOf(symbol) + 1}
+      </div>
+      
+      {/* Coin Info */}
+      <div className="col-span-4 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+          <img 
+            src={
+              shouldUseDummySvg(symbol)
+                ? getDummySvg(symbol)
+                : coin?.logo_url || getDummySvg(symbol)
+            }
+            alt={symbol}
+            className="w-6 h-6 object-contain rounded-full"
+            loading="lazy"
+            decoding="async"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (!failedLogos.has(symbol)) {
+                console.log(`🔧 Switching to dummy SVG for ${symbol}`);
+                setFailedLogos(prev => new Set([...prev, symbol]));
+                target.src = getDummySvg(symbol);
+              }
+            }}
+          />
+        </div>
+        <div>
+          <div className="font-semibold text-slate-900 dark:text-white">{symbol}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {coin?.display_name || symbol.replace('USDT', '')}
+          </div>
+        </div>
+      </div>
+
+      {/* Price */}
+      <div className="col-span-2 text-right">
+        <div className="font-semibold text-slate-900 dark:text-white">
+          ${priceData.price.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+        </div>
+      </div>
+
+      {/* 24h Change */}
+      <div className="col-span-2 flex items-center justify-end">
+        {priceData.change24h !== undefined && (
+          <div className={`flex items-center gap-1 px-2 py-1 rounded text-sm font-medium ${
+            priceData.change24h >= 0 
+              ? 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/20' 
+              : 'text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/20'
+          }`}>
+            {priceData.change24h >= 0 ? (
+              <TrendingUp className="h-3 w-3" />
+            ) : (
+              <TrendingDown className="h-3 w-3" />
+            )}
+            {priceData.change24h >= 0 ? '+' : ''}
+            {priceData.change24h.toFixed(2)}%
+          </div>
+        )}
+      </div>
+      
+      {/* Last Update */}
+      <div className="col-span-3 flex items-center justify-end text-xs text-slate-400">
+        {new Date(priceData.lastUpdate).toLocaleTimeString('tr-TR', {
+          hour: '2-digit',
+          minute: '2-digit', 
+          second: '2-digit'
+        })}
+      </div>
+    </div>
+  )
+})
+
+interface PriceData {
+  symbol: string
+  price: number
+  change24h?: number
+  lastUpdate: string
 }
 
 interface UserAlarm {
@@ -40,39 +143,125 @@ interface TriggeredAlarm {
 
 
 
-export default function CustomerDashboard() {
+const CustomerDashboard = memo(() => {
   const [coins, setCoins] = useState<Coin[]>([])
   const [alarms, setAlarms] = useState<UserAlarm[]>([])
   const [triggeredAlarms, setTriggeredAlarms] = useState<TriggeredAlarm[]>([])
+  const [prices, setPrices] = useState<Map<string, PriceData>>(new Map())
+  const [isUpdatingPrices, setIsUpdatingPrices] = useState(false)
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set())
+
+  // Alternative logo service function (unused but kept for reference)
+  // const getAlternativeLogo = useCallback((symbol: string) => {
+  //   const cleanSymbol = symbol.replace('USDT', '').toLowerCase()
+  //   // Try multiple CDNs as fallback
+  //   return [
+  //     `https://cryptologos.cc/logos/${cleanSymbol}-${cleanSymbol}-logo.png`,
+  //     `https://assets.coingecko.com/coins/images/1/large/${cleanSymbol}.png`,
+  //     `https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@master/32/color/${cleanSymbol}.png`,
+  //     `https://s2.coinmarketcap.com/static/img/coins/64x64/${getCoingeckoId(cleanSymbol)}.png`
+  //   ]
+  // }, [])
+
+  // Mapping for popular coins to CoinMarketCap IDs
+  const getCoingeckoId = (symbol: string): string => {
+    const mapping: {[key: string]: string} = {
+      'btc': '1', 'eth': '1027', 'bnb': '1839', 'xrp': '52', 'ada': '2010',
+      'doge': '74', 'matic': '3890', 'sol': '5426', 'ltc': '2', 'avax': '5805',
+      'link': '1975', 'atom': '3794', 'dot': '6636', 'uni': '7083', 'aave': '7278'
+    }
+    return mapping[symbol] || '1' // Default to Bitcoin if not found
+  }
+  // Removed pagination states for better performance
   const [email, setEmail] = useState('emrecanergin12@hotmail.com')
   const [selectedCoin, setSelectedCoin] = useState('')
   const [selectedAction, setSelectedAction] = useState('buy')
   // Timeframe is managed by admin presets, not customer choice
   const [loading, setLoading] = useState(false)
 
-  // Fetch coins from backend API
-  const fetchCoins = async () => {
+  // Fetch coins from backend API - memoized
+  const fetchCoins = useCallback(async () => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       const response = await fetch(`${API_BASE}/admin/coins`)
       if (response.ok) {
         const data = await response.json()
         setCoins(data.items || [])
       } else {
-        console.warn('Failed to fetch coins:', response.status)
+        console.error('Failed to fetch coins:', response.status, response.statusText)
       }
     } catch (error) {
       console.error('Error fetching coins:', error)
-      // Set empty array to prevent infinite loading
-      setCoins([])
+      setCoins([]) // Set empty array to prevent infinite loading
     }
-  }
+  }, [])
 
-  // Fetch user alarms
-  const fetchAlarms = async () => {
+  // Memoized active coins to prevent unnecessary re-renders
+  const activeCoins = useMemo(() => coins.filter(coin => coin.active), [coins])
+
+  // Fetch real-time prices for active coins - memoized with debouncing
+  const fetchPrices = useCallback(async () => {
+    if (isUpdatingPrices) return // Prevent multiple simultaneous updates
+    setIsUpdatingPrices(true)
+    try {
+      let activeSymbols = activeCoins
+        .map(coin => coin.symbol)
+        .filter(symbol => symbol && symbol.trim()) // Remove empty symbols
+        .slice(0, 100) // Limit to exactly 100 coins for API validation
+      
+      // Double check length
+      if (activeSymbols.length > 100) {
+        activeSymbols = activeSymbols.slice(0, 100)
+      }
+      
+      console.log('Sending', activeSymbols.length, 'symbols to API') // Debug log
+      if (activeSymbols.length === 0) return
+
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+      const response = await fetch(`${API_BASE}/prices/current`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbols: activeSymbols,
+          preferCache: true,
+          maxCacheAge: 300
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.data.prices) {
+          setPrices(prevPrices => {
+            const newPrices = new Map(prevPrices) // Keep existing prices
+            Object.entries(data.data.prices).forEach(([symbol, priceData]: [string, any]) => {
+              newPrices.set(symbol, {
+                symbol,
+                price: priceData.p || priceData.price, // Handle both new and old API formats
+                change24h: priceData.c || priceData.change24h,
+                lastUpdate: priceData.u || priceData.lastUpdate
+              })
+            })
+            return newPrices
+          })
+        }
+      } else {
+        // Log error details for debugging
+        const errorText = await response.text()
+        // Don't clear prices on error, keep showing last successful data
+        return
+      }
+    } catch (error) {
+      // Don't clear prices on error, keep showing last successful data
+    } finally {
+      setIsUpdatingPrices(false)
+    }
+  }, [activeCoins, isUpdatingPrices])
+
+  // Fetch user alarms - memoized
+  const fetchAlarms = useCallback(async () => {
     if (!email) return
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       const response = await fetch(`${API_BASE}/notifications/user-alarms?email=${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()
@@ -82,10 +271,10 @@ export default function CustomerDashboard() {
       console.error('Error fetching alarms:', error)
       setAlarms([])
     }
-  }
+  }, [email])
 
-  // Create new alarm
-  const createAlarm = async () => {
+  // Create new alarm - memoized
+  const createAlarm = useCallback(async () => {
     if (!email || !selectedCoin || !selectedAction) {
       toast.error('Email, coin ve aksiyon seçimi gerekli!')
       return
@@ -93,7 +282,7 @@ export default function CustomerDashboard() {
 
     setLoading(true)
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       const response = await fetch(`${API_BASE}/notifications/user-alarms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -110,21 +299,27 @@ export default function CustomerDashboard() {
         setSelectedCoin('')
         setSelectedAction('buy')
       } else {
-        const error = await response.json()
-        toast.error(error.message || 'Alarm oluşturulamadı!')
+        let errorMessage = 'Alarm oluşturulamadı!'
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`
+        }
+        toast.error(errorMessage)
       }
     } catch (error) {
-      toast.error('Beklenmeyen hata!')
-      console.error('Error creating alarm:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Beklenmeyen hata!'
+      toast.error(`Bağlantı hatası: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
-  }
+  }, [email, selectedCoin, selectedAction])
 
-  // Delete alarm
-  const deleteAlarm = async (alarmId: string) => {
+  // Delete alarm - memoized
+  const deleteAlarm = useCallback(async (alarmId: string) => {
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       const response = await fetch(`${API_BASE}/notifications/user-alarms/${alarmId}`, {
         method: 'DELETE'
       })
@@ -137,15 +332,14 @@ export default function CustomerDashboard() {
       }
     } catch (error) {
       toast.error('Beklenmeyen hata!')
-      console.error('Error deleting alarm:', error)
     }
-  }
+  }, [])
 
-  // Fetch triggered alarms
-  const fetchTriggeredAlarms = async () => {
+  // Fetch triggered alarms - memoized
+  const fetchTriggeredAlarms = useCallback(async () => {
     if (!email) return
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://avoalert-api.onrender.com'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
       const response = await fetch(`${API_BASE}/notifications/triggered-alarms?email=${encodeURIComponent(email)}`)
       if (response.ok) {
         const data = await response.json()
@@ -155,26 +349,149 @@ export default function CustomerDashboard() {
       console.error('Error fetching triggered alarms:', error)
       setTriggeredAlarms([])
     }
-  }
+  }, [email])
 
-  useEffect(() => {
-    fetchCoins()
+  // Problematic coins that should always use dummy SVG
+  const BLACKLISTED_LOGOS = new Set(['COTIUSDT', 'CELOUSDT', 'DYDXUSDT', 'ENJUSDT', 'HBARUSDT'])
+
+  // Generate dummy SVG for failed logos
+  const getDummySvg = useCallback((symbol: string) => {
+    const cleanSymbol = symbol.replace('USDT', '').slice(0, 3)
+    const colors = ['#3B82F6', '#8B5CF6', '#EF4444', '#10B981', '#F59E0B', '#EC4899']
+    const colorIndex = cleanSymbol.charCodeAt(0) % colors.length
+    const color = colors[colorIndex]
+    
+    return `data:image/svg+xml,${encodeURIComponent(`
+      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="16" fill="${color}"/>
+        <text x="16" y="20" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="12" font-weight="bold">${cleanSymbol}</text>
+      </svg>
+    `)}`
   }, [])
 
+  // Check if coin should use dummy SVG
+  const shouldUseDummySvg = useCallback((symbol: string) => {
+    return BLACKLISTED_LOGOS.has(symbol) || failedLogos.has(symbol)
+  }, [failedLogos])
+
+  // Preload and validate logos
+  const preloadLogos = useCallback((coins: Coin[]) => {
+    console.log('🖼️ Validating logos and creating dummies for failed ones...')
+    let checkedCount = 0
+    
+    coins.forEach(coin => {
+      if (coin.logo_url && !failedLogos.has(coin.symbol)) {
+        const img = new Image()
+        img.onload = () => {
+          checkedCount++
+          if (checkedCount === coins.filter(c => c.logo_url).length) {
+            console.log(`✅ Logo validation completed`)
+          }
+        }
+        img.onerror = () => {
+          console.log(`🔧 Creating dummy SVG for ${coin.symbol}`)
+          setFailedLogos(prev => new Set([...prev, coin.symbol]))
+        }
+        img.src = coin.logo_url
+      }
+    })
+  }, [failedLogos])
+
+  // Optimized initial data load - parallel loading
   useEffect(() => {
+    console.log('🚀 Starting optimized parallel data loading...')
+    const startTime = performance.now()
+    
+    // Load coins and prices in parallel for faster initial load
+    Promise.all([
+      fetchCoins(),
+      // Pre-fetch prices for popular coins to show immediately
+      (async () => {
+        try {
+          const popularSymbols = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT']
+          const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
+          const response = await fetch(`${API_BASE}/prices/current?symbols=${popularSymbols.join(',')}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success && data.data?.prices) {
+              const initialPrices = new Map()
+              Object.entries(data.data.prices).forEach(([symbol, priceData]: [string, any]) => {
+                initialPrices.set(symbol, {
+                  symbol,
+                  price: priceData.p || 0,
+                  change24h: priceData.c || 0,
+                  lastUpdate: priceData.u || new Date().toISOString()
+                })
+              })
+              setPrices(initialPrices)
+              console.log(`⚡ Pre-loaded ${initialPrices.size} popular prices`)
+            }
+          }
+        } catch (error) {
+          console.error('Pre-loading popular prices failed:', error)
+        }
+      })()
+    ]).then(() => {
+      const loadTime = performance.now() - startTime
+      console.log(`✅ Initial data loaded in ${loadTime.toFixed(1)}ms`)
+    })
+
     if (email) {
       fetchAlarms()
       fetchTriggeredAlarms()
     }
-  }, [email])
+  }, [fetchCoins, email])
 
-  // Auto-refresh triggered alarms every 3 seconds
+  // Preload logos when coins are loaded
+  useEffect(() => {
+    if (coins.length > 0) {
+      preloadLogos(coins.slice(0, 15)) // Reduced to 15 for faster preload
+    }
+  }, [coins.length, preloadLogos])
+
+  // Fetch all prices when coins are loaded - with proper cleanup
+  useEffect(() => {
+    console.log('Coins loaded:', activeCoins.length, 'active coins')
+    if (activeCoins.length > 0) {
+      // Delay initial full fetch to let popular prices show first
+      const initialFetchTimeout = setTimeout(() => {
+        fetchPrices()
+      }, 500)
+      
+      // Set up interval with optimized delay
+      const priceInterval = setInterval(() => {
+        console.log('Auto-refreshing prices...')
+        fetchPrices()
+      }, 12000) // Slightly faster updates
+      
+      return () => {
+        console.log('Cleaning up price interval and timeout')
+        clearTimeout(initialFetchTimeout)
+        clearInterval(priceInterval)
+      }
+    }
+  }, [activeCoins.length])  // Remove fetchPrices from deps to prevent loops
+
+  // Report failed logos after load
+  useEffect(() => {
+    if (failedLogos.size > 0) {
+      console.group('🚨 Failed Logo URLs Summary:');
+      Array.from(failedLogos).forEach(symbol => {
+        const coin = coins.find(c => c.symbol === symbol);
+        console.error(`${symbol}: ${coin?.logo_url}`);
+      });
+      console.groupEnd();
+      console.log(`Total failed logos: ${failedLogos.size}/${coins.length}`);
+    }
+  }, [failedLogos.size, coins])
+
+  // Auto-refresh triggered alarms every 30 seconds (extreme optimization)
   useEffect(() => {
     if (!email) return
     
     const interval = setInterval(() => {
       fetchTriggeredAlarms()
-    }, 3000)
+    }, 30000)
 
     return () => clearInterval(interval)
   }, [email])
@@ -241,8 +558,11 @@ export default function CustomerDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-sm font-medium">Toplam Coin</p>
-                  <p className="text-3xl font-bold">{coins.filter(c => c.active).length}</p>
+                  <p className="text-purple-100 text-sm font-medium">Anlık Fiyat Verisi</p>
+                  <p className="text-3xl font-bold">{prices.size}</p>
+                  <p className="text-xs text-purple-200 mt-1">
+                    {prices.size > 0 ? 'Son güncelleme: Az önce' : 'Yükleniyor...'}
+                  </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-purple-200" />
               </div>
@@ -275,34 +595,55 @@ export default function CustomerDashboard() {
                   <SelectTrigger className="h-12">
                     <SelectValue placeholder="Coin seçin" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {coins.filter(coin => coin.active).map((coin) => (
+                  <SelectContent className="max-h-[300px]">
+                    {/* Show popular coins first for faster selection */}
+                    {activeCoins
+                      .sort((a, b) => {
+                        const popularCoins = ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'MATICUSDT', 'SOLUSDT']
+                        const aIndex = popularCoins.indexOf(a.symbol)
+                        const bIndex = popularCoins.indexOf(b.symbol)
+                        if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+                        if (aIndex !== -1) return -1
+                        if (bIndex !== -1) return 1
+                        return a.symbol.localeCompare(b.symbol)
+                      })
+                      .slice(0, 50) // Limit to first 50 coins to prevent dropdown lag
+                      .map((coin) => (
                       <SelectItem key={coin.id} value={coin.symbol}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-white border border-slate-200">
-                            {coin.logo_url ? (
-                              <img 
-                                src={coin.logo_url} 
-                                alt={coin.symbol}
-                                className="w-6 h-6 object-contain"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                  target.nextElementSibling?.classList.remove('hidden');
-                                }}
-                              />
-                            ) : null}
-                            <div className={`${coin.logo_url ? 'hidden' : ''} w-full h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold`}>
-                              {coin.symbol.slice(0, 2)}
-                            </div>
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden bg-white border border-slate-200">
+                            <img 
+                              src={
+                                shouldUseDummySvg(coin.symbol)
+                                  ? getDummySvg(coin.symbol)
+                                  : coin.logo_url || getDummySvg(coin.symbol)
+                              }
+                              alt={coin.symbol}
+                              className="w-4 h-4 object-contain rounded-full"
+                              loading="lazy"
+                              decoding="async"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                if (!failedLogos.has(coin.symbol)) {
+                                  console.log(`🔧 Dropdown: Switching to dummy SVG for ${coin.symbol}`);
+                                  setFailedLogos(prev => new Set([...prev, coin.symbol]));
+                                  target.src = getDummySvg(coin.symbol);
+                                }
+                              }}
+                            />
                           </div>
                           <div>
-                            <div className="font-semibold">{coin.symbol}</div>
-                            <div className="text-xs text-muted-foreground">{coin.display_name || coin.symbol}</div>
+                            <div className="font-semibold text-sm">{coin.symbol}</div>
+                            <div className="text-xs text-muted-foreground">{coin.display_name || coin.symbol.replace('USDT', '')}</div>
                           </div>
                         </div>
                       </SelectItem>
                     ))}
+                    {activeCoins.length > 50 && (
+                      <div className="p-2 text-xs text-muted-foreground text-center border-t">
+                        İlk 50 coin gösteriliyor. Daha fazla için arama kullanın.
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -422,6 +763,9 @@ export default function CustomerDashboard() {
                                     className="w-8 h-8 object-contain"
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
+                                      const symbol = coin?.symbol || 'UNKNOWN';
+                                      console.error(`❌ Logo failed: ${symbol} - ${coin?.logo_url}`);
+                                      setFailedLogos(prev => new Set([...prev, symbol]));
                                       target.style.display = 'none';
                                       target.nextElementSibling?.classList.remove('hidden');
                                     }}
@@ -438,6 +782,23 @@ export default function CustomerDashboard() {
                             <div className="space-y-1">
                               <div className="flex items-center gap-3">
                                 <span className="font-semibold text-slate-900 dark:text-white">{alarm.coin_symbol}</span>
+                                {prices.has(alarm.coin_symbol) && (
+                                  <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-slate-600 dark:text-slate-400">
+                                      ${prices.get(alarm.coin_symbol)?.price.toFixed(2)}
+                                    </span>
+                                    {prices.get(alarm.coin_symbol)?.change24h && (
+                                      <span className={`text-xs ${
+                                        (prices.get(alarm.coin_symbol)?.change24h || 0) >= 0 
+                                          ? 'text-green-600 dark:text-green-400' 
+                                          : 'text-red-600 dark:text-red-400'
+                                      }`}>
+                                        {(prices.get(alarm.coin_symbol)?.change24h || 0) >= 0 ? '+' : ''}
+                                        {prices.get(alarm.coin_symbol)?.change24h?.toFixed(2)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                                 <Badge 
                                   variant="outline"
                                   className={`
@@ -477,6 +838,82 @@ export default function CustomerDashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Live Price Monitor - CoinMarketCap Style */}
+            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Anlık Fiyat Takibi</CardTitle>
+                    <CardDescription className="text-sm">
+                      Sistem coinlerinin güncel fiyat bilgileri (15 saniyede bir güncellenir)
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {prices.size === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BarChart3 className="h-8 w-8 text-slate-400" />
+                    </div>
+                    <p className="text-slate-600 dark:text-slate-400 font-medium">Fiyat verileri yükleniyor...</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Binance API&apos;sından anlık veriler alınıyor</p>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden rounded-lg">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                      <div className="col-span-1 text-center">#</div>
+                      <div className="col-span-4">Coin</div>
+                      <div className="col-span-2 text-right">Fiyat</div>
+                      <div className="col-span-2 text-right">24s Değişim</div>
+                      <div className="col-span-3 text-right">Son Güncelleme</div>
+                    </div>
+                    
+                    {/* Table Rows - Optimized */}
+                    <div className="max-h-96 overflow-y-auto">
+                      {prices.size === 0 ? (
+                        <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                          <div className="animate-pulse">Fiyat verileri yükleniyor...</div>
+                        </div>
+                      ) : (
+                        Array.from(prices.entries())
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .slice(0, 30) // Reduced to 30 for better performance
+                          .map(([symbol, priceData]) => {
+                          const coin = coins.find(c => c.symbol === symbol)
+                        
+                          return (
+                            <PriceTableRow
+                              key={`price-row-${symbol}`}
+                              coin={coin}
+                              symbol={symbol}
+                              priceData={priceData}
+                              failedLogos={failedLogos}
+                              setFailedLogos={setFailedLogos}
+                              onAlarmCreate={createAlarm}
+                              getDummySvg={getDummySvg}
+                              shouldUseDummySvg={shouldUseDummySvg}
+                            />
+                        )
+                        })
+                      )}
+                      
+                      {/* Show remaining count */}
+                      {prices.size > 50 && (
+                        <div className="p-4 text-center border-t border-slate-100 dark:border-slate-800 text-sm text-slate-500 dark:text-slate-400">
+                          İlk 50 coin gösteriliyor (Toplam: {prices.size} coin)
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -525,6 +962,9 @@ export default function CustomerDashboard() {
                                     className="w-8 h-8 object-contain"
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
+                                      const symbol = coin?.symbol || 'UNKNOWN';
+                                      console.error(`❌ Logo failed: ${symbol} - ${coin?.logo_url}`);
+                                      setFailedLogos(prev => new Set([...prev, symbol]));
                                       target.style.display = 'none';
                                       target.nextElementSibling?.classList.remove('hidden');
                                     }}
@@ -594,4 +1034,8 @@ export default function CustomerDashboard() {
       </div>
     </div>
   )
-}
+})
+
+CustomerDashboard.displayName = 'CustomerDashboard'
+
+export default CustomerDashboard
