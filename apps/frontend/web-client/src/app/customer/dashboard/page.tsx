@@ -551,6 +551,10 @@ const CustomerDashboard = memo(() => {
                   <p className="text-xs text-purple-200 mt-1">
                     {prices.size > 0 ? 'Son güncelleme: Az önce' : 'Yükleniyor...'}
                   </p>
+                  {/* DEBUG */}
+                  <p className="text-xs text-purple-200 mt-1">
+                    DEBUG: prices keys = {Array.from(prices.keys()).slice(0, 5).join(', ')}
+                  </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-purple-200" />
               </div>
